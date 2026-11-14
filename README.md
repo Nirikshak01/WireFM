@@ -191,7 +191,6 @@ We welcome all developers, designers, and enthusiasts to help:
 > **🐛 Found a Bug or Issue?**
 > If you run into any bugs, unexpected behavior, or difficulties, we are truly sorry for the inconvenience! Please let us know so we can fix it immediately:
 > - 📝 Open a [GitHub Issue](https://github.com/jasmin1727/WireFM/issues)
-> - 📧 Or email directly at: **[thakorjasmin503@gmail.com](mailto:thakorjasmin503@gmail.com)**
 
 ---
 
