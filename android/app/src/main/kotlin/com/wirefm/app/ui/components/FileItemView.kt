@@ -24,7 +24,7 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.InsertDriveFile
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Movie
-import androidx.compose.material.icons.filled.ZipFolder
+import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -207,7 +207,7 @@ fun getFileIconAndColor(file: FileItem): Pair<ImageVector, Color> {
         "mp4", "mkv", "avi", "mov", "webm", "flv" -> Icons.Default.Movie to VideoColor
         "mp3", "flac", "wav", "m4a", "ogg", "aac" -> Icons.Default.AudioFile to AudioColor
         "pdf", "doc", "docx", "txt", "md", "odt" -> Icons.Default.Description to DocumentColor
-        "zip", "tar", "gz", "7z", "rar", "bz2" -> Icons.Default.ZipFolder to ArchiveColor
+        "zip", "tar", "gz", "7z", "rar", "bz2" -> Icons.Default.Archive to ArchiveColor
         "kt", "java", "rs", "go", "c", "cpp", "py", "js", "ts", "html", "css", "json", "xml" -> Icons.Default.Code to CodeColor
         else -> Icons.Default.InsertDriveFile to TextSecondary
     }
