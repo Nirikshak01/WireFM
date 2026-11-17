@@ -2,11 +2,9 @@
   <img src="Assets/benner.png" alt="WireFM Banner" width="100%" />
 </p>
 
-
-
 <p align="center">
   <a href="https://github.com/jasmin1727/WireFM/releases/latest/download/WireFM.apk">
-    <img src="https://img.shields.io/badge/Download_Android_APK-WireFM.apk-8B5CF6?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" height="42" />
+    <img src="https://img.shields.io/badge/Download_Android_APK-WireFM_2.0-8B5CF6?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" height="42" />
   </a>
   <a href="#-quick-start-pc">
     <img src="https://img.shields.io/badge/💻_Install_on_Linux-1--Line_Curl-4ECCA3?style=for-the-badge&logo=linux&logoColor=white" alt="Linux Install" height="42" />
@@ -16,8 +14,8 @@
 <p align="center">
   <img src="https://img.shields.io/badge/License-MIT-blue.svg" alt="License: MIT" />
   <img src="https://img.shields.io/badge/Platform-Linux%20%7C%20Android-purple.svg" alt="Platform" />
-  <img src="https://img.shields.io/badge/Server%20Size-11%20MB%20(Go)-orange.svg" alt="Size" />
-  <img src="https://img.shields.io/badge/Android-Kotlin-green.svg" alt="Kotlin" />
+  <img src="https://img.shields.io/badge/Android-100%25_Jetpack_Compose-green.svg" alt="Jetpack Compose" />
+  <img src="https://img.shields.io/badge/Design-Material_3_AMOLED-black.svg" alt="M3 AMOLED" />
 </p>
 
 ---
@@ -27,23 +25,27 @@
 > ### 📱 **[👉 CLICK HERE TO DOWNLOAD ANDROID APK (WireFM.apk)](https://github.com/jasmin1727/WireFM/releases/latest/download/WireFM.apk)**
 > *Install directly on your Android phone without needing Android Studio!*
 
-
 ---
 
-## ⚡ Highlights
+## ⚡ WireFM 2.0 Highlights
 
+- 🎨 **100% Jetpack Compose & Material 3 UI**:
+  - Rebuilt ground-up in Kotlin & Jetpack Compose.
+  - Deep AMOLED pitch black theme (`#000000`) with smooth spring animations.
+  - Expressive pill tabs, segmented controls, and animated bottom sheets.
 - 🎯 **Zero Setup**: 1 command to run on PC, 1 tap to scan on Android.
-- 📱 **Instant QR Code Pairing**: Terminal generates a QR code — scan with phone camera to connect in 1 second.
-- 📂 **Bidirectional File Management**:
-  - Browse, copy, move, rename, delete files on PC from phone.
-  - Browse, download, and upload files to phone from PC.
-- 🐧 **Native Linux Explorer Integration**:
-  - Auto-detects **Dolphin**, **Thunar**, or **Nautilus**.
-  - Mounts phone as a native network drive using WebDAV.
-- 🪶 **Ultra Lightweight**:
-  - PC server is a single **~11MB Go binary** with zero dependencies.
-  - Web UI is 100% embedded inside the binary.
-  - Clean Lavender/Purple theme matching modern desktop and phone aesthetics.
+- 📷 **Ultra-Fast CameraX QR Pairing**:
+  - Modern CameraX 60fps scanner with custom animated viewfinder laser sweep.
+  - Auto-detection with instant haptic feedback on scan.
+- 📂 **Bidirectional Dual Storage File Explorer**:
+  - Seamless toggle between **PC Storage** and phone's **Internal Storage**.
+  - Interactive breadcrumb navigation chips for instant parent directory jumping.
+  - Grid & List view modes with rich color-coded file icons.
+  - Smart copy, cut, paste, rename, delete (Recycle Bin), and multi-file upload.
+- 🐧 **Native Linux Desktop Integration**:
+  - Auto-mount phone directly into **Dolphin**, **Thunar**, or **Nautilus** via WebDAV.
+- 🪶 **Ultra Lightweight Server**:
+  - Single standalone binary with zero external dependencies.
 
 ---
 
@@ -52,14 +54,13 @@
 | Operating System | Status | Details |
 | :--- | :---: | :--- |
 | 🐧 **Linux** | ✅ **Supported** | Full integration: Dolphin, Thunar, Nautilus, CLI & WebDAV mount (`mount_phone.sh`). |
-| 📱 **Android** | ✅ **Supported** | Native Kotlin app with QR camera auto-pairing, bidirectional uploads, and phone storage browsing. |
-| 🍎 **macOS** | 🧪 *Experimental* | Finder WebDAV script (`mount_mac.sh`) created, but real-device testing is **pending** (may contain bugs). |
-| 🪟 **Windows** | 🧪 *Experimental* | Network Drive scripts (`mount_windows.bat` / `.ps1`) created, but real-device testing is **pending** (may contain bugs). |
+| 📱 **Android** | ✅ **Supported** | 100% Jetpack Compose app with CameraX QR pairing, dual storage browsing, and background sync. |
+| 🍎 **macOS** | 🧪 *Experimental* | Finder WebDAV script (`mount_mac.sh`) created. |
+| 🪟 **Windows** | 🧪 *Experimental* | Network Drive scripts (`mount_windows.bat` / `.ps1`) created. |
 
 ---
 
 ## 🚀 Quick Start (PC)
-
 
 ### 1-Line Install (Arch / Ubuntu / Debian / Fedora):
 ```bash
@@ -75,28 +76,14 @@ wirefm
 Terminal will show:
 1. Local IP & WebDAV endpoints.
 2. An ASCII QR Code.
-3. Open the link in any browser or scan with the **WireFM Android App**.
+3. Scan with the **WireFM Android App**.
  
 ---
-## 📱 WireFM Mobile App (Android)
-<table>
-  <tr>
-    <td align="center" valign="middle">
-      <img src="Assets/logo.png" width="160" alt="WireFM Logo" style="border-radius: 24px;" />
-    </td>
-  </tr>
-  <tr>
-    <td align="center">
-      <a href="https://github.com/jasmin1727/WireFM/releases/latest/download/WireFM.apk">
-        <b>⬇️ Download WireFM.apk</b>
-      </a>
-    </td>
-  </tr>
-</table>
 
+## 📱 WireFM Mobile App (Android)
 
 1. Download [`WireFM.apk`](https://github.com/jasmin1727/WireFM/releases/latest/download/WireFM.apk) onto your phone and install.
-2. Open the app and tap **"Connect Your Pc (Scan QR)"**.
+2. Open the app and tap **"Scan"**.
 3. Point your camera at the PC terminal's QR code.
 4. 🎉 **Done!** You now have complete access to manage all files and folders.
 
@@ -116,7 +103,7 @@ This mounts via `gio` / `kio-fuse` directly into Dolphin or Thunar sidebar!
 
 ```
            ┌──────────────────────┐
-           │      WireFM (Go)     │
+           │     WireFM Core      │
            │  • Port 8080 (REST)  │
            │  • Port 8081 (WebDAV)│
            │  • Terminal QR Code  │
@@ -124,66 +111,13 @@ This mounts via `gio` / `kio-fuse` directly into Dolphin or Thunar sidebar!
                       │ Local Wi-Fi (HTTP / WebDAV)
                       ▼
            ┌──────────────────────┐
-           │   WireFM (Kotlin)    │
-           │  • ZXing QR Scanner  │
-           │  • Bi-directional FM │
-           │  • Material Purple UI│
+           │   WireFM (Compose)   │
+           │  • 100% Jetpack Comp │
+           │  • CameraX Analyzer  │
+           │  • Dual-Storage FM   │
+           │  • Material 3 AMOLED │
            └──────────────────────┘
 ```
-
----
-
-## 📋 Roadmap & Completed Milestones
-
-### ✅ Completed & Delivered
-- [x] **Lightweight Standalone Server**: Single ~11MB Go binary with zero external dependencies.
-- [x] **Terminal QR Code**: Auto-generates ASCII QR code for zero-friction mobile pairing.
-- [x] **Embedded Modern Web UI**: Fast, responsive Dark & Lavender Web File Manager.
-- [x] **Full File Operations API**: Browse, download, upload, delete, rename, copy, and move.
-- [x] **WebDAV Server**: Built-in WebDAV on port `8081` for native file explorer mounting.
-- [x] **Linux Desktop Detection**: Automatic detection and mounting for Dolphin, Thunar, and Nautilus.
-- [x] **Native Android Architecture**: Kotlin app with built-in ZXing QR scanning.
-- [x] **Mobile UI Perfection**: Dual PC & Phone storage tabs, upload file picker, public Downloads directory integration, and popup actions.
-- [x] **Cross-Platform Native Mounting**: 1-click mounting scripts for Linux (`mount_phone.sh`), macOS (`mount_mac.sh`), and Windows (`mount_windows.bat` & `mount_windows.ps1`).
-- [x] **Media Viewer**: In-browser lightbox for images, HTML5 video & audio player, syntax code viewer, and in-app streaming.
-- [x] **Batch Drag-and-Drop**: Multi-file and batch drag-and-drop uploading in Web UI.
-- [x] **Secure Wi-Fi Transfers**: Dynamic 4-digit PIN verification and header authentication.
-- [x] **One-Line Install Script**: `curl -sSL ... | bash` installer.
-- [x] **Automated CI/CD**: GitHub Actions workflow for building Android APK and Linux binaries.
-
-### 🧪 Under Testing & Verification
-- [ ] **macOS & Windows Hardware Testing**: Real-device verification of WebDAV auto-mount scripts to squash any platform-specific quirks/bugs.
-
----
-
-## 🤝 Contributing
-
-Contributions are what make the open-source community such an amazing place to learn, inspire, and create. Any contributions you make to **WireFM** are **greatly appreciated**!
-
-We welcome all developers, designers, and enthusiasts to help:
-- ⚡ Make file operations even faster and lighter.
-- 🎨 Refine and perfect the UI/UX across web and mobile.
-- 🐛 Squashing bugs and improving edge-case stability.
-- 🌐 Expanding platform support for macOS and Windows.
-
-**How to contribute:**
-1. Fork the Project
-2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your Changes (`git commit -m 'feat: Add some AmazingFeature'`)
-4. Push to the Branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
----
-
-## 💬 Feedback, Support & Contact
-
-> **⭐ Loving WireFM?**
-> If WireFM makes your day-to-day workflow smoother, please consider giving it a ⭐ **Star** on [GitHub](https://github.com/jasmin1727/WireFM)! Thank you for using and supporting this project.
-
-> **🐛 Found a Bug or Issue?**
-> If you run into any bugs, unexpected behavior, or difficulties, we are truly sorry for the inconvenience! Please let us know so we can fix it immediately:
-> - 📝 Open a [GitHub Issue](https://github.com/jasmin1727/WireFM/issues)
-> - 📧 Or email directly at: **[thakorjasmin503@gmail.com](mailto:thakorjasmin503@gmail.com)**
 
 ---
 
