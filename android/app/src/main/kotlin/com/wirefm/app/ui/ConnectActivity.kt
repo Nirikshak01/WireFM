@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -30,6 +31,7 @@ import androidx.lifecycle.lifecycleScope
 import com.wirefm.app.network.WireFMClient
 import com.wirefm.app.ui.components.ManualConnectBottomSheet
 import com.wirefm.app.ui.scanner.QrScannerActivity
+import com.wirefm.app.ui.screens.SettingsScreen
 import com.wirefm.app.ui.screens.WelcomeScreen
 import com.wirefm.app.ui.theme.DarkCardBg
 import com.wirefm.app.ui.theme.PillPrimary
@@ -43,8 +45,10 @@ import kotlinx.coroutines.withContext
 class ConnectActivity : ComponentActivity() {
 
     private var showManualSheet by mutableStateOf(false)
+    private var showSettingsScreen by mutableStateOf(false)
     private var isConnecting by mutableStateOf(false)
     private var connectionStatusText by mutableStateOf("")
+    private var themeMode by mutableStateOf("dark")
 
     private val qrScannerLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -60,23 +64,42 @@ class ConnectActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val prefs = getSharedPreferences("wirefm", MODE_PRIVATE)
+        themeMode = prefs.getString("theme_mode", "dark") ?: "dark"
+
         setContent {
-            WireFMTheme {
+            val isDark = when (themeMode) {
+                "light" -> false
+                "dark" -> true
+                else -> isSystemInDarkTheme()
+            }
+
+            WireFMTheme(darkTheme = isDark) {
                 Box(modifier = Modifier.fillMaxSize()) {
-                    WelcomeScreen(
-                        onScanClick = {
-                            startQrScan()
-                        },
-                        onManualConnectClick = {
-                            showManualSheet = true
-                        },
-                        onSettingsClick = {
-                            Toast.makeText(this@ConnectActivity, "WireFM v2.0 • Ultra-fast", Toast.LENGTH_SHORT).show()
-                        }
-                    )
+                    if (showSettingsScreen) {
+                        SettingsScreen(
+                            currentThemeMode = themeMode,
+                            onThemeModeChanged = { newMode ->
+                                themeMode = newMode
+                                prefs.edit().putString("theme_mode", newMode).apply()
+                            },
+                            onBack = { showSettingsScreen = false }
+                        )
+                    } else {
+                        WelcomeScreen(
+                            onScanClick = {
+                                startQrScan()
+                            },
+                            onManualConnectClick = {
+                                showManualSheet = true
+                            },
+                            onSettingsClick = {
+                                showSettingsScreen = true
+                            }
+                        )
+                    }
 
                     if (showManualSheet) {
-                        val prefs = getSharedPreferences("wirefm", MODE_PRIVATE)
                         ManualConnectBottomSheet(
                             initialIp = prefs.getString("last_ip", "") ?: "",
                             initialPort = prefs.getString("last_port", "8080") ?: "8080",
@@ -150,7 +173,6 @@ class ConnectActivity : ComponentActivity() {
             }
 
             if (result != null) {
-                // Save preferences
                 getSharedPreferences("wirefm", MODE_PRIVATE).edit()
                     .putString("last_ip", ip)
                     .putString("last_port", port)
@@ -161,7 +183,6 @@ class ConnectActivity : ComponentActivity() {
                 delay(500)
                 isConnecting = false
 
-                // Launch file manager
                 startActivity(Intent(this@ConnectActivity, FileManagerActivity::class.java).apply {
                     putExtra("ip", ip)
                     putExtra("port", port)
