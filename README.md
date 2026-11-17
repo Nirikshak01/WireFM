@@ -2,9 +2,7 @@
   <img src="Assets/benner.png" alt="WireFM Banner" width="100%" />
 </p>
 
-<p align="center">
-  <img src="Assets/namelg.png" alt="WireFM" width="300px" />
-</p>
+
 
 <p align="center">
   <a href="https://github.com/jasmin1727/WireFM/releases/latest/download/WireFM.apk">
@@ -29,6 +27,7 @@
 > ### 📱 **[👉 CLICK HERE TO DOWNLOAD ANDROID APK (WireFM.apk)](https://github.com/jasmin1727/WireFM/releases/latest/download/WireFM.apk)**
 > *Install directly on your Android phone without needing Android Studio!*
 
+
 ---
 
 ## ⚡ Highlights
@@ -52,14 +51,15 @@
 
 | Operating System | Status | Details |
 | :--- | :---: | :--- |
-| 🐧 **Linux** | ✅ **Supported** | Full integration: Dolphin, Thunar, Nautilus, CLI & WebDAV mount. |
-| 📱 **Android** | ✅ **Supported** | Native Kotlin app with QR camera auto-pairing. |
-| 🍎 **macOS** | 🚧 *In Progress* | Native Finder WebDAV volume connection coming soon. |
-| 🪟 **Windows** | 🚧 *In Progress* | Windows Explorer Map Network Drive auto-script coming soon. |
+| 🐧 **Linux** | ✅ **Supported** | Full integration: Dolphin, Thunar, Nautilus, CLI & WebDAV mount (`mount_phone.sh`). |
+| 📱 **Android** | ✅ **Supported** | Native Kotlin app with QR camera auto-pairing, bidirectional uploads, and phone storage browsing. |
+| 🍎 **macOS** | 🧪 *Experimental* | Finder WebDAV script (`mount_mac.sh`) created, but real-device testing is **pending** (may contain bugs). |
+| 🪟 **Windows** | 🧪 *Experimental* | Network Drive scripts (`mount_windows.bat` / `.ps1`) created, but real-device testing is **pending** (may contain bugs). |
 
 ---
 
 ## 🚀 Quick Start (PC)
+
 
 ### 1-Line Install (Arch / Ubuntu / Debian / Fedora):
 ```bash
@@ -76,14 +76,24 @@ Terminal will show:
 1. Local IP & WebDAV endpoints.
 2. An ASCII QR Code.
 3. Open the link in any browser or scan with the **WireFM Android App**.
-
+ 
 ---
+## 📱 WireFM Mobile App (Android)
+<table>
+  <tr>
+    <td align="center" valign="middle">
+      <img src="Assets/logo.png" width="160" alt="WireFM Logo" style="border-radius: 24px;" />
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <a href="https://github.com/jasmin1727/WireFM/releases/latest/download/WireFM.apk">
+        <b>⬇️ Download WireFM.apk</b>
+      </a>
+    </td>
+  </tr>
+</table>
 
-## 📱 Mobile App (Android)
-
-<p align="center">
-  <img src="Assets/lg.png" alt="WireFM App Icon" width="80" />
-</p>
 
 1. Download [`WireFM.apk`](https://github.com/jasmin1727/WireFM/releases/latest/download/WireFM.apk) onto your phone and install.
 2. Open the app and tap **"Connect Your Pc (Scan QR)"**.
@@ -123,9 +133,9 @@ This mounts via `gio` / `kio-fuse` directly into Dolphin or Thunar sidebar!
 
 ---
 
-## 📋 Roadmap & TODO
+## 📋 Roadmap & Completed Milestones
 
-### ✅ Completed
+### ✅ Completed & Delivered
 - [x] **Lightweight Standalone Server**: Single ~11MB Go binary with zero external dependencies.
 - [x] **Terminal QR Code**: Auto-generates ASCII QR code for zero-friction mobile pairing.
 - [x] **Embedded Modern Web UI**: Fast, responsive Dark & Lavender Web File Manager.
@@ -133,16 +143,16 @@ This mounts via `gio` / `kio-fuse` directly into Dolphin or Thunar sidebar!
 - [x] **WebDAV Server**: Built-in WebDAV on port `8081` for native file explorer mounting.
 - [x] **Linux Desktop Detection**: Automatic detection and mounting for Dolphin, Thunar, and Nautilus.
 - [x] **Native Android Architecture**: Kotlin app with built-in ZXing QR scanning.
+- [x] **Mobile UI Perfection**: Dual PC & Phone storage tabs, upload file picker, public Downloads directory integration, and popup actions.
+- [x] **Cross-Platform Native Mounting**: 1-click mounting scripts for Linux (`mount_phone.sh`), macOS (`mount_mac.sh`), and Windows (`mount_windows.bat` & `mount_windows.ps1`).
+- [x] **Media Viewer**: In-browser lightbox for images, HTML5 video & audio player, syntax code viewer, and in-app streaming.
+- [x] **Batch Drag-and-Drop**: Multi-file and batch drag-and-drop uploading in Web UI.
+- [x] **Secure Wi-Fi Transfers**: Dynamic 4-digit PIN verification and header authentication.
 - [x] **One-Line Install Script**: `curl -sSL ... | bash` installer.
 - [x] **Automated CI/CD**: GitHub Actions workflow for building Android APK and Linux binaries.
 
-### 🚧 Coming Soon (In Active Development)
-- [ ] **Mobile UI Perfection**: Polished animations, fluid transitions, and refined touch ergonomics.
-- [ ] **Cross-Platform Native Mounting**: 1-click mounting scripts for macOS Finder and Windows Explorer.
-- [ ] **Media Viewer**: In-browser and in-app image preview gallery, audio playback, and video streaming.
-- [ ] **Batch Drag-and-Drop**: Multi-file and whole folder drag-and-drop uploading.
-- [ ] **Encrypted Wi-Fi Transfers**: Optional TLS/HTTPS mode with PIN verification for untrusted networks.
-- [ ] **Performance Optimizations & Bug Fixes**: Continuous memory and throughput improvements.
+### 🧪 Under Testing & Verification
+- [ ] **macOS & Windows Hardware Testing**: Real-device verification of WebDAV auto-mount scripts to squash any platform-specific quirks/bugs.
 
 ---
 
