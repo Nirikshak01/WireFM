@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,15 +22,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.lifecycleScope
-import com.google.zxing.integration.android.IntentIntegrator
 import com.wirefm.app.network.WireFMClient
 import com.wirefm.app.ui.components.ManualConnectBottomSheet
+import com.wirefm.app.ui.scanner.QrScannerActivity
 import com.wirefm.app.ui.screens.WelcomeScreen
 import com.wirefm.app.ui.theme.DarkCardBg
 import com.wirefm.app.ui.theme.PillPrimary
@@ -46,6 +46,17 @@ class ConnectActivity : ComponentActivity() {
     private var isConnecting by mutableStateOf(false)
     private var connectionStatusText by mutableStateOf("")
 
+    private val qrScannerLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK) {
+            val qrText = result.data?.getStringExtra("qr_result")
+            if (!qrText.isNullOrEmpty()) {
+                handleScannedQr(qrText)
+            }
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -60,7 +71,7 @@ class ConnectActivity : ComponentActivity() {
                             showManualSheet = true
                         },
                         onSettingsClick = {
-                            Toast.makeText(this@ConnectActivity, "WireFM v2.0", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(this@ConnectActivity, "WireFM v2.0 • Ultra-fast", Toast.LENGTH_SHORT).show()
                         }
                     )
 
@@ -112,11 +123,20 @@ class ConnectActivity : ComponentActivity() {
     }
 
     private fun startQrScan() {
-        IntentIntegrator(this).apply {
-            setPrompt("Scan WireFM QR code on PC terminal")
-            setOrientationLocked(false)
-            setBeepEnabled(true)
-            initiateScan()
+        qrScannerLauncher.launch(Intent(this, QrScannerActivity::class.java))
+    }
+
+    private fun handleScannedQr(raw: String) {
+        try {
+            val fullUrl = if (!raw.startsWith("http://") && !raw.startsWith("https://")) "http://$raw" else raw
+            val url = java.net.URL(fullUrl)
+            val ip = url.host
+            val port = if (url.port > 0) url.port.toString() else "8080"
+            val pass = url.query?.substringAfter("password=") ?: ""
+
+            attemptConnect(ip, port, pass)
+        } catch (e: Exception) {
+            Toast.makeText(this, "Invalid QR code: $raw", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -130,7 +150,7 @@ class ConnectActivity : ComponentActivity() {
             }
 
             if (result != null) {
-                // Save prefs
+                // Save preferences
                 getSharedPreferences("wirefm", MODE_PRIVATE).edit()
                     .putString("last_ip", ip)
                     .putString("last_port", port)
@@ -138,7 +158,7 @@ class ConnectActivity : ComponentActivity() {
                     .apply()
 
                 connectionStatusText = "Connected!"
-                delay(600)
+                delay(500)
                 isConnecting = false
 
                 // Launch file manager
@@ -160,26 +180,6 @@ class ConnectActivity : ComponentActivity() {
                     Toast.LENGTH_LONG
                 ).show()
             }
-        }
-    }
-
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        val result = IntentIntegrator.parseActivityResult(requestCode, resultCode, data)
-        if (result != null && result.contents != null) {
-            try {
-                val raw = result.contents.trim()
-                val fullUrl = if (!raw.startsWith("http://") && !raw.startsWith("https://")) "http://$raw" else raw
-                val url = java.net.URL(fullUrl)
-                val ip = url.host
-                val port = if (url.port > 0) url.port.toString() else "8080"
-                val pass = url.query?.substringAfter("password=") ?: ""
-
-                attemptConnect(ip, port, pass)
-            } catch (e: Exception) {
-                Toast.makeText(this, "Invalid QR code format", Toast.LENGTH_SHORT).show()
-            }
-        } else {
-            super.onActivityResult(requestCode, resultCode, data)
         }
     }
 }
