@@ -2,7 +2,6 @@ package com.wirefm.app.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,7 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -38,10 +36,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wirefm.app.model.FileItem
 import com.wirefm.app.ui.theme.AccentRed
-import com.wirefm.app.ui.theme.DarkCardBg
-import com.wirefm.app.ui.theme.DarkSurface
-import com.wirefm.app.ui.theme.TextPrimary
-import com.wirefm.app.ui.theme.TextSecondary
+import com.wirefm.app.ui.theme.WireFMTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,11 +53,12 @@ fun FileActionBottomSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val (icon, tint) = getFileIconAndColor(file)
+    val colors = WireFMTheme.colors
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = DarkSurface,
+        containerColor = colors.surface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
         Column(
@@ -100,7 +96,7 @@ fun FileActionBottomSheet(
                         text = file.name,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary,
+                        color = colors.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -108,7 +104,7 @@ fun FileActionBottomSheet(
                     Text(
                         text = if (file.isDir) "Directory" else "${formatFileSize(file.size)} • ${file.ext.uppercase()}",
                         fontSize = 12.sp,
-                        color = TextSecondary
+                        color = colors.textSecondary
                     )
                 }
             }
@@ -120,9 +116,8 @@ fun FileActionBottomSheet(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(DarkCardBg)
+                    .background(colors.surfaceVariant)
             ) {
-                // Download or Upload Action
                 if (!file.isDir) {
                     ActionRow(
                         title = if (isPhoneStorage) "Send / Upload to PC" else "Download to Phone",
@@ -193,6 +188,8 @@ private fun ActionRow(
     isDestructive: Boolean = false,
     onClick: () -> Unit
 ) {
+    val colors = WireFMTheme.colors
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -203,7 +200,7 @@ private fun ActionRow(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = if (isDestructive) AccentRed else TextPrimary,
+            tint = if (isDestructive) AccentRed else colors.textPrimary,
             modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.width(14.dp))
@@ -211,7 +208,7 @@ private fun ActionRow(
             text = title,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            color = if (isDestructive) AccentRed else TextPrimary
+            color = if (isDestructive) AccentRed else colors.textPrimary
         )
     }
 }

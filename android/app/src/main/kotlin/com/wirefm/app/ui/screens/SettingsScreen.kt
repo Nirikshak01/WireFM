@@ -3,7 +3,9 @@ package com.wirefm.app.ui.screens
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -23,7 +25,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -36,7 +37,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,19 +46,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.wirefm.app.R
-import com.wirefm.app.ui.theme.DarkBackground
-import com.wirefm.app.ui.theme.DarkCardBg
-import com.wirefm.app.ui.theme.DarkCardBorder
-import com.wirefm.app.ui.theme.PillPrimary
-import com.wirefm.app.ui.theme.PillPrimaryContent
-import com.wirefm.app.ui.theme.TextPrimary
-import com.wirefm.app.ui.theme.TextSecondary
+import com.wirefm.app.ui.theme.WireFMTheme
 
 @Composable
 fun SettingsScreen(
@@ -67,14 +62,15 @@ fun SettingsScreen(
     onBack: () -> Unit
 ) {
     val context = LocalContext.current
+    val colors = WireFMTheme.colors
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(DarkBackground)
+            .background(colors.background)
             .statusBarsPadding()
             .navigationBarsPadding()
-            .padding(horizontal = 24.dp, vertical = 12.dp)
+            .padding(horizontal = 20.dp, vertical = 8.dp)
     ) {
         Column(
             modifier = Modifier.fillMaxSize(),
@@ -90,78 +86,88 @@ fun SettingsScreen(
             ) {
                 IconButton(
                     onClick = onBack,
-                    modifier = Modifier.size(40.dp)
+                    modifier = Modifier.size(44.dp)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = TextPrimary,
-                        modifier = Modifier.size(24.dp)
+                        tint = colors.textPrimary,
+                        modifier = Modifier.size(26.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            // 1) Circular Logo Container
-            Box(
-                modifier = Modifier
-                    .size(96.dp)
-                    .clip(CircleShape)
-                    .background(Color(0xFF1E1E24))
-                    .border(1.dp, Color(0xFF2E2E38), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
+            // 1) Logo: ~72dp rounded WireFM tile (Crossfade between dark/light tile)
+            Crossfade(
+                targetState = colors.isDark,
+                animationSpec = tween(400, easing = FastOutSlowInEasing),
+                label = "settingsLogoCrossfade"
+            ) { isDark ->
                 Image(
-                    painter = painterResource(id = R.drawable.logo_ninja_white),
-                    contentDescription = "Ninja Logo",
+                    painter = painterResource(
+                        id = if (isDark) R.drawable.wirefm_tile_white else R.drawable.wirefm_tile_dark
+                    ),
+                    contentDescription = "WireFM Logo Tile",
                     modifier = Modifier
-                        .width(48.dp)
-                        .height(28.dp)
+                        .size(72.dp)
+                        .clip(RoundedCornerShape(18.dp)),
+                    contentScale = ContentScale.Fit
                 )
             }
 
             Spacer(modifier = Modifier.height(14.dp))
 
-            // 2) App Version Subtitle
+            // 2) App Version Subtitle (14sp)
             Text(
                 text = "app version 2.0.0",
-                fontSize = 13.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                color = TextSecondary
+                color = colors.textSecondary
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(10.dp))
 
-            // 3) WireFM Pill Badge
+            // 3) WireFM Pill Badge (height ~44dp, text 24sp bold)
             Box(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(50))
-                    .background(PillPrimary)
-                    .padding(horizontal = 20.dp, vertical = 6.dp)
+                    .height(44.dp)
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(colors.scanPillBg)
+                    .padding(horizontal = 24.dp),
+                contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "WireFM",
-                    fontSize = 14.sp,
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.Bold,
-                    color = PillPrimaryContent
+                    color = colors.scanPillContent
                 )
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(30.dp))
 
             // 4) Theme Switcher (System / White / dark)
-            ThemeSwitcherCard(
-                currentMode = currentThemeMode,
-                onSelectMode = onThemeModeChanged
-            )
+            // Screen width ~75%, center, height ~78dp, narrow look
+            Box(
+                modifier = Modifier.fillMaxWidth(0.75f),
+                contentAlignment = Alignment.Center
+            ) {
+                ThemeSwitcherCard(
+                    currentMode = currentThemeMode,
+                    onSelectMode = onThemeModeChanged
+                )
+            }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             // 5) Action Pill Buttons (Check update / Github / Privacy)
+            // Screen width ~83%, height 56dp, full pill, text 20sp bold, icon 20dp, 10dp gap
             Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                modifier = Modifier.fillMaxWidth(0.83f),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 SettingsActionPill(
                     title = "Check update",
@@ -177,7 +183,7 @@ fun SettingsScreen(
 
                 SettingsActionPill(
                     title = "Github",
-                    icon = Icons.Default.Settings, // Or GitHub cat
+                    icon = Icons.Default.Settings,
                     onClick = {
                         val intent = Intent(
                             Intent.ACTION_VIEW,
@@ -208,18 +214,21 @@ fun ThemeSwitcherCard(
     currentMode: String,
     onSelectMode: (String) -> Unit
 ) {
+    val colors = WireFMTheme.colors
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(58.dp)
-            .clip(RoundedCornerShape(20.dp))
-            .background(Color(0xFF16161C))
-            .border(1.dp, Color(0xFF262630), RoundedCornerShape(20.dp))
-            .padding(5.dp)
+            .height(78.dp)
+            .clip(RoundedCornerShape(22.dp))
+            .background(colors.switcherBox)
+            .border(1.dp, colors.cardBorder, RoundedCornerShape(22.dp))
+            .padding(6.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
         ) {
             ThemeSegmentItem(
                 title = "System",
@@ -229,6 +238,8 @@ fun ThemeSwitcherCard(
                 modifier = Modifier.weight(1f)
             )
 
+            Spacer(modifier = Modifier.width(4.dp))
+
             ThemeSegmentItem(
                 title = "White",
                 icon = Icons.Default.WbSunny,
@@ -236,6 +247,8 @@ fun ThemeSwitcherCard(
                 onClick = { onSelectMode("light") },
                 modifier = Modifier.weight(1f)
             )
+
+            Spacer(modifier = Modifier.width(4.dp))
 
             ThemeSegmentItem(
                 title = "dark",
@@ -256,16 +269,18 @@ private fun ThemeSegmentItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val colors = WireFMTheme.colors
+
     val bgColor by animateColorAsState(
-        targetValue = if (isSelected) Color(0xFF282834) else Color.Transparent,
-        animationSpec = tween(200),
-        label = "themeSegmentBg"
+        targetValue = if (isSelected) colors.switcherSelected else Color.Transparent,
+        animationSpec = tween(280, easing = FastOutSlowInEasing),
+        label = "segmentBg"
     )
 
     val contentColor by animateColorAsState(
-        targetValue = if (isSelected) TextPrimary else TextSecondary,
-        animationSpec = tween(200),
-        label = "themeSegmentContent"
+        targetValue = if (isSelected) colors.switcherSelectedContent else colors.switcherUnselectedContent,
+        animationSpec = tween(280, easing = FastOutSlowInEasing),
+        label = "segmentContent"
     )
 
     Box(
@@ -287,12 +302,12 @@ private fun ThemeSegmentItem(
                 imageVector = icon,
                 contentDescription = title,
                 tint = contentColor,
-                modifier = Modifier.size(17.dp)
+                modifier = Modifier.size(24.dp)
             )
-            Spacer(modifier = Modifier.height(2.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = title,
-                fontSize = 11.sp,
+                fontSize = 14.sp,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                 color = contentColor
             )
@@ -306,15 +321,17 @@ fun SettingsActionPill(
     icon: ImageVector,
     onClick: () -> Unit
 ) {
+    val colors = WireFMTheme.colors
+
     Button(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .height(52.dp),
-        shape = RoundedCornerShape(26.dp),
+            .height(56.dp),
+        shape = RoundedCornerShape(28.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF181820),
-            contentColor = TextPrimary
+            containerColor = colors.buttonContainer,
+            contentColor = colors.buttonContent
         ),
         elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
     ) {
@@ -326,15 +343,15 @@ fun SettingsActionPill(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = TextPrimary,
+                tint = colors.buttonContent,
                 modifier = Modifier.size(20.dp)
             )
             Spacer(modifier = Modifier.width(10.dp))
             Text(
                 text = title,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimary
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = colors.buttonContent
             )
         }
     }

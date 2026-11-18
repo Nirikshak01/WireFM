@@ -1,6 +1,5 @@
 package com.wirefm.app.ui.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,13 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.wirefm.app.ui.theme.DarkCardBg
-import com.wirefm.app.ui.theme.DarkCardBorder
-import com.wirefm.app.ui.theme.DarkSurface
-import com.wirefm.app.ui.theme.PillPrimary
-import com.wirefm.app.ui.theme.PillPrimaryContent
-import com.wirefm.app.ui.theme.TextPrimary
-import com.wirefm.app.ui.theme.TextSecondary
+import com.wirefm.app.ui.theme.WireFMTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,10 +41,12 @@ fun ManualConnectBottomSheet(
     var port by remember { mutableStateOf(initialPort) }
     var password by remember { mutableStateOf(initialPass) }
 
+    val colors = WireFMTheme.colors
+
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = DarkSurface,
+        containerColor = colors.surface,
         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
     ) {
         Column(
@@ -64,13 +59,13 @@ fun ManualConnectBottomSheet(
                 text = "Manual Connection",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = colors.textPrimary
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = "Enter your PC local IP address and server PIN.",
                 fontSize = 13.sp,
-                color = TextSecondary
+                color = colors.textSecondary
             )
 
             Spacer(modifier = Modifier.height(20.dp))
@@ -78,18 +73,18 @@ fun ManualConnectBottomSheet(
             OutlinedTextField(
                 value = ip,
                 onValueChange = { ip = it },
-                label = { Text("PC IP Address", color = TextSecondary) },
-                placeholder = { Text("e.g. 192.168.1.10", color = TextSecondary.copy(alpha = 0.5f)) },
+                label = { Text("PC IP Address", color = colors.textSecondary) },
+                placeholder = { Text("e.g. 192.168.1.10", color = colors.textSecondary.copy(alpha = 0.5f)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PillPrimary,
-                    unfocusedBorderColor = DarkCardBorder,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary,
-                    focusedContainerColor = DarkCardBg,
-                    unfocusedContainerColor = DarkCardBg
+                    focusedBorderColor = colors.scanPillBg,
+                    unfocusedBorderColor = colors.cardBorder,
+                    focusedTextColor = colors.textPrimary,
+                    unfocusedTextColor = colors.textPrimary,
+                    focusedContainerColor = colors.surfaceVariant,
+                    unfocusedContainerColor = colors.surfaceVariant
                 )
             )
 
@@ -98,19 +93,19 @@ fun ManualConnectBottomSheet(
             OutlinedTextField(
                 value = port,
                 onValueChange = { port = it },
-                label = { Text("Port", color = TextSecondary) },
-                placeholder = { Text("8080", color = TextSecondary.copy(alpha = 0.5f)) },
+                label = { Text("Port", color = colors.textSecondary) },
+                placeholder = { Text("8080", color = colors.textSecondary.copy(alpha = 0.5f)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PillPrimary,
-                    unfocusedBorderColor = DarkCardBorder,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary,
-                    focusedContainerColor = DarkCardBg,
-                    unfocusedContainerColor = DarkCardBg
+                    focusedBorderColor = colors.scanPillBg,
+                    unfocusedBorderColor = colors.cardBorder,
+                    focusedTextColor = colors.textPrimary,
+                    unfocusedTextColor = colors.textPrimary,
+                    focusedContainerColor = colors.surfaceVariant,
+                    unfocusedContainerColor = colors.surfaceVariant
                 )
             )
 
@@ -119,18 +114,18 @@ fun ManualConnectBottomSheet(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Server PIN (Password)", color = TextSecondary) },
-                placeholder = { Text("Displayed in PC terminal", color = TextSecondary.copy(alpha = 0.5f)) },
+                label = { Text("Server PIN (Password)", color = colors.textSecondary) },
+                placeholder = { Text("Displayed in PC terminal", color = colors.textSecondary.copy(alpha = 0.5f)) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PillPrimary,
-                    unfocusedBorderColor = DarkCardBorder,
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary,
-                    focusedContainerColor = DarkCardBg,
-                    unfocusedContainerColor = DarkCardBg
+                    focusedBorderColor = colors.scanPillBg,
+                    unfocusedBorderColor = colors.cardBorder,
+                    focusedTextColor = colors.textPrimary,
+                    unfocusedTextColor = colors.textPrimary,
+                    focusedContainerColor = colors.surfaceVariant,
+                    unfocusedContainerColor = colors.surfaceVariant
                 )
             )
 
@@ -144,11 +139,11 @@ fun ManualConnectBottomSheet(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(50.dp),
-                shape = RoundedCornerShape(50),
+                    .height(52.dp),
+                shape = RoundedCornerShape(26.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = PillPrimary,
-                    contentColor = PillPrimaryContent
+                    containerColor = colors.scanPillBg,
+                    contentColor = colors.scanPillContent
                 )
             ) {
                 Text(

@@ -11,56 +11,54 @@ val WireFMTypography = Typography(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,
         fontSize = 32.sp,
-        lineHeight = 38.sp,
-        color = TextPrimary
+        lineHeight = 38.sp
     ),
     headlineMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,
         fontSize = 24.sp,
-        lineHeight = 30.sp,
-        color = TextPrimary
+        lineHeight = 30.sp
     ),
     titleLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.SemiBold,
         fontSize = 20.sp,
-        lineHeight = 26.sp,
-        color = TextPrimary
+        lineHeight = 26.sp
     ),
     titleMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Medium,
         fontSize = 16.sp,
-        lineHeight = 22.sp,
-        color = TextPrimary
+        lineHeight = 22.sp
     ),
     bodyLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
         fontSize = 15.sp,
-        lineHeight = 22.sp,
-        color = TextPrimary
+        lineHeight = 22.sp
     ),
     bodyMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
         fontSize = 13.sp,
-        lineHeight = 18.sp,
-        color = TextSecondary
+        lineHeight = 18.sp
+    ),
+    bodySmall = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        lineHeight = 16.sp
     ),
     labelLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,
         fontSize = 14.sp,
-        lineHeight = 18.sp,
-        color = TextPrimary
+        lineHeight = 20.sp
     ),
-    labelSmall = TextStyle(
+    labelMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Medium,
-        fontSize = 11.sp,
-        lineHeight = 14.sp,
-        color = TextTertiary
+        fontSize = 12.sp,
+        lineHeight = 16.sp
     )
 )

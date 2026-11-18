@@ -4,11 +4,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -20,13 +18,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.wirefm.app.ui.theme.DarkCardBg
-import com.wirefm.app.ui.theme.TextPrimary
-import com.wirefm.app.ui.theme.TextSecondary
-import com.wirefm.app.ui.theme.TextTertiary
+import com.wirefm.app.ui.theme.WireFMTheme
 
 @Composable
 fun BreadcrumbBar(
@@ -35,8 +31,8 @@ fun BreadcrumbBar(
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
+    val colors = WireFMTheme.colors
 
-    // Clean up segments
     val normalized = currentPath.replace('\\', '/')
     val segments = normalized.split('/').filter { it.isNotEmpty() }
 
@@ -48,12 +44,12 @@ fun BreadcrumbBar(
         modifier = modifier
             .fillMaxWidth()
             .horizontalScroll(scrollState)
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .padding(horizontal = 16.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Root / Home Chip
+        // Root Chip
         BreadcrumbChip(
-            title = "Root",
+            title = "root",
             isLast = segments.isEmpty(),
             onClick = { onNavigateTo("/") }
         )
@@ -67,8 +63,10 @@ fun BreadcrumbBar(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = TextTertiary,
-                modifier = Modifier.size(16.dp)
+                tint = colors.textTertiary,
+                modifier = Modifier
+                    .padding(horizontal = 2.dp)
+                    .size(16.dp)
             )
 
             BreadcrumbChip(
@@ -86,15 +84,17 @@ private fun BreadcrumbChip(
     isLast: Boolean,
     onClick: () -> Unit
 ) {
+    val colors = WireFMTheme.colors
+
     Text(
         text = title,
-        fontSize = 13.sp,
-        fontWeight = if (isLast) FontWeight.Bold else FontWeight.Medium,
-        color = if (isLast) TextPrimary else TextSecondary,
+        fontSize = 14.sp,
+        fontWeight = if (isLast) FontWeight.Bold else FontWeight.SemiBold,
+        color = if (isLast) colors.textPrimary else colors.textSecondary,
         modifier = Modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(if (isLast) DarkCardBg else androidx.compose.ui.graphics.Color.Transparent)
+            .background(if (isLast) colors.surfaceVariant.copy(alpha = 0.6f) else Color.Transparent)
             .clickable { onClick() }
-            .padding(horizontal = 8.dp, vertical = 4.dp)
+            .padding(horizontal = 6.dp, vertical = 3.dp)
     )
 }

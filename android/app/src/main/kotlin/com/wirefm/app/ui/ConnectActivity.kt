@@ -113,11 +113,12 @@ class ConnectActivity : ComponentActivity() {
                     }
 
                     if (isConnecting) {
+                        val colors = WireFMTheme.colors
                         Dialog(onDismissRequest = {}) {
                             Box(
                                 modifier = Modifier
                                     .size(170.dp)
-                                    .background(DarkCardBg, shape = RoundedCornerShape(20.dp)),
+                                    .background(colors.surface, shape = RoundedCornerShape(20.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Column(
@@ -125,14 +126,14 @@ class ConnectActivity : ComponentActivity() {
                                     modifier = Modifier.padding(16.dp)
                                 ) {
                                     CircularProgressIndicator(
-                                        color = PillPrimary,
+                                        color = colors.scanPillBg,
                                         modifier = Modifier.size(44.dp),
                                         strokeWidth = 3.5.dp
                                     )
                                     Spacer(modifier = Modifier.height(16.dp))
                                     Text(
                                         text = connectionStatusText.ifEmpty { "Connecting..." },
-                                        color = TextPrimary,
+                                        color = colors.textPrimary,
                                         fontSize = 14.sp,
                                         fontWeight = FontWeight.Medium
                                     )

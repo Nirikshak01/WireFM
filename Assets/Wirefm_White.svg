@@ -1,0 +1,58 @@
+
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="512" height="512"
+     viewBox="0 0 512 512"
+     role="img"
+     aria-labelledby="title"
+     shape-rendering="geometricPrecision">
+
+  <title id="title">OmniHarness App Icon</title>
+
+  <!-- White rounded background -->
+  <rect x="0" y="0"
+        width="512" height="512"
+        rx="116" ry="116"
+        fill="#FFFFFF"/>
+
+  <!-- OmniHarness original icon -->
+  <g transform="translate(-35.3 -37.3) scale(4.3)"
+     fill="#0A0A0A">
+
+    <path d="M70.9 23.4
+      C68.3 21.8 65.5 22 62.9 23.5
+      L32.2 42.1
+      C28.9 44.1 27 47.7 27 51.5
+      V64.1
+      L65.7 36.3
+      C68.4 34.4 71.9 34.5 74.7 36.4
+      L92.3 48.4
+      C94.1 49.6 95.1 51.6 95.1 53.8
+      V84.3
+      C95.1 86.3 94 88.1 92.2 89.2
+      L84 93.7
+      L82 81.1
+      L68 89.7
+      V114.6
+      L103.8 93.8
+      C106.8 92 108.5 88.8 108.5 85.4
+      V50.3
+      C108.5 46.8 106.6 43.5 103.6 41.7
+      Z"/>
+
+    <path d="M49.8 58.4
+      L30.2 72.3
+      C28.2 73.7 27.2 76.1 27.2 78.7
+      V86.7
+      C27.2 90.4 29.1 93.7 32.3 95.5
+      L50 105.5
+      Z"/>
+
+    <path d="M83.1 58.4
+      L60.5 71.2
+      C59.3 71.9 58.8 73.1 58.8 74.5
+      V85.2
+      L83.1 71.2
+      Z"/>
+
+  </g>
+</svg>

@@ -1,7 +1,6 @@
 package com.wirefm.app.ui.scanner
 
 import android.Manifest
-import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -28,7 +27,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,7 +39,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FlashOff
@@ -65,7 +62,7 @@ import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -78,7 +75,6 @@ import com.google.zxing.MultiFormatReader
 import com.google.zxing.PlanarYUVLuminanceSource
 import com.google.zxing.common.HybridBinarizer
 import com.wirefm.app.ui.theme.DarkBackground
-import com.wirefm.app.ui.theme.PillPrimary
 import com.wirefm.app.ui.theme.TextPrimary
 import com.wirefm.app.ui.theme.TextSecondary
 import com.wirefm.app.ui.theme.WireFMTheme
@@ -109,9 +105,9 @@ class QrScannerActivity : ComponentActivity() {
         }
 
         setContent {
-            WireFMTheme {
+            WireFMTheme(themeMode = "dark") {
                 Box(modifier = Modifier.fillMaxSize().background(DarkBackground)) {
-                    // CameraX Preview
+                    // Fullscreen CameraX Preview with FILL_CENTER
                     CameraPreview(
                         onQrDetected = { qrText ->
                             if (!isScanned) {
@@ -129,7 +125,7 @@ class QrScannerActivity : ComponentActivity() {
                         }
                     )
 
-                    // Visual Viewfinder Overlay
+                    // Unified Viewfinder Overlay: Scrim, Centered Cutout, Border & Laser
                     ScannerOverlay(
                         isTorchOn = isTorchOn,
                         onToggleTorch = {
@@ -173,7 +169,9 @@ fun CameraPreview(
 
     AndroidView(
         factory = { ctx ->
-            val previewView = PreviewView(ctx)
+            val previewView = PreviewView(ctx).apply {
+                scaleType = PreviewView.ScaleType.FILL_CENTER
+            }
             val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
 
             cameraProviderFuture.addListener({
@@ -259,33 +257,32 @@ fun ScannerOverlay(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "laser")
     val laserPosition by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
+        initialValue = 0.05f,
+        targetValue = 0.95f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2200, easing = LinearEasing),
+            animation = tween(2000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "laserPos"
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Semi-transparent cutout canvas
+        // Unified Canvas: Scrim, Centered Cutout, Frame Border and Laser inside
         Canvas(modifier = Modifier.fillMaxSize()) {
             val boxSize = 260.dp.toPx()
-            val left = (size.width - boxSize) / 2
-            val top = (size.height - boxSize) / 2.3f
+            val left = (size.width - boxSize) / 2f
+            val top = (size.height - boxSize) / 2f
+            val cornerRadius = 28.dp.toPx()
 
-            val scrimColor = Color(0x99000000)
+            // 1. Draw dark scrim across whole screen
+            drawRect(color = Color(0x99000000))
 
-            // Draw full scrim
-            drawRect(color = scrimColor)
-
-            // Clear viewfinder hole
+            // 2. Cut out clear viewfinder hole exactly in center
             val cutoutPath = Path().apply {
                 addRoundRect(
                     RoundRect(
                         rect = Rect(Offset(left, top), Size(boxSize, boxSize)),
-                        cornerRadius = CornerRadius(24.dp.toPx())
+                        cornerRadius = CornerRadius(cornerRadius)
                     )
                 )
             }
@@ -296,7 +293,16 @@ fun ScannerOverlay(
                 blendMode = BlendMode.Clear
             )
 
-            // Laser line moving vertically
+            // 3. Draw single neat frame border matching the cutout
+            drawRoundRect(
+                color = Color(0xFF2F8BF0),
+                topLeft = Offset(left, top),
+                size = Size(boxSize, boxSize),
+                cornerRadius = CornerRadius(cornerRadius),
+                style = Stroke(width = 2.dp.toPx())
+            )
+
+            // 4. Laser line moving vertically strictly within frame
             val laserY = top + (boxSize * laserPosition)
             drawLine(
                 brush = Brush.horizontalGradient(
@@ -313,18 +319,6 @@ fun ScannerOverlay(
                 strokeWidth = 3.dp.toPx()
             )
         }
-
-        // Viewfinder Border Box
-        Box(
-            modifier = Modifier
-                .size(260.dp)
-                .align(Alignment.Center)
-                .border(
-                    width = 2.dp,
-                    color = Color(0xFF6C63FF).copy(alpha = 0.8f),
-                    shape = RoundedCornerShape(24.dp)
-                )
-        )
 
         // Top Navigation Bar
         Row(

@@ -111,8 +111,12 @@ class FileManagerActivity : ComponentActivity() {
 
         currentPcPath = root
 
+        val prefs = getSharedPreferences("wirefm", MODE_PRIVATE)
+        val themeMode = prefs.getString("theme_mode", "system") ?: "system"
+
         setContent {
-            WireFMTheme {
+            WireFMTheme(themeMode = themeMode) {
+                val colors = WireFMTheme.colors
                 Box(modifier = Modifier.fillMaxSize()) {
                     val phoneDeviceName = "${Build.MANUFACTURER.replaceFirstChar { it.uppercase() }} ${Build.MODEL}"
 
@@ -213,7 +217,8 @@ class FileManagerActivity : ComponentActivity() {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(DarkCardBg, shape = RoundedCornerShape(20.dp))
+                                    .background(colors.surface, shape = RoundedCornerShape(20.dp))
+                                    .border(1.dp, colors.cardBorder, RoundedCornerShape(20.dp))
                                     .padding(20.dp)
                             ) {
                                 Column {
@@ -221,20 +226,22 @@ class FileManagerActivity : ComponentActivity() {
                                         text = "Create New Folder",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 18.sp,
-                                        color = TextPrimary
+                                        color = colors.textPrimary
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
                                     OutlinedTextField(
                                         value = newFolderName,
                                         onValueChange = { newFolderName = it },
-                                        placeholder = { Text("Folder name", color = TextSecondary) },
+                                        placeholder = { Text("Folder name", color = colors.textSecondary) },
                                         singleLine = true,
                                         shape = RoundedCornerShape(12.dp),
                                         colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = PillPrimary,
-                                            unfocusedBorderColor = DarkCardBorder,
-                                            focusedTextColor = TextPrimary,
-                                            unfocusedTextColor = TextPrimary
+                                            focusedBorderColor = colors.scanPillBg,
+                                            unfocusedBorderColor = colors.cardBorder,
+                                            focusedTextColor = colors.textPrimary,
+                                            unfocusedTextColor = colors.textPrimary,
+                                            focusedContainerColor = colors.surfaceVariant,
+                                            unfocusedContainerColor = colors.surfaceVariant
                                         ),
                                         modifier = Modifier.fillMaxWidth()
                                     )
@@ -247,14 +254,14 @@ class FileManagerActivity : ComponentActivity() {
                                                 if (isPhoneStorage) createFolderPhone(name) else createFolderPc(name)
                                             }
                                         },
-                                        shape = RoundedCornerShape(50),
+                                        shape = RoundedCornerShape(25.dp),
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = PillPrimary,
-                                            contentColor = PillPrimaryContent
+                                            containerColor = colors.scanPillBg,
+                                            contentColor = colors.scanPillContent
                                         ),
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth().height(48.dp)
                                     ) {
-                                        Text("Create", fontWeight = FontWeight.Bold)
+                                        Text("Create", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                     }
                                 }
                             }
@@ -267,7 +274,8 @@ class FileManagerActivity : ComponentActivity() {
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(DarkCardBg, shape = RoundedCornerShape(20.dp))
+                                    .background(colors.surface, shape = RoundedCornerShape(20.dp))
+                                    .border(1.dp, colors.cardBorder, RoundedCornerShape(20.dp))
                                     .padding(20.dp)
                             ) {
                                 Column {
@@ -275,7 +283,7 @@ class FileManagerActivity : ComponentActivity() {
                                         text = "Rename",
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 18.sp,
-                                        color = TextPrimary
+                                        color = colors.textPrimary
                                     )
                                     Spacer(modifier = Modifier.height(14.dp))
                                     OutlinedTextField(
@@ -284,10 +292,12 @@ class FileManagerActivity : ComponentActivity() {
                                         singleLine = true,
                                         shape = RoundedCornerShape(12.dp),
                                         colors = OutlinedTextFieldDefaults.colors(
-                                            focusedBorderColor = PillPrimary,
-                                            unfocusedBorderColor = DarkCardBorder,
-                                            focusedTextColor = TextPrimary,
-                                            unfocusedTextColor = TextPrimary
+                                            focusedBorderColor = colors.scanPillBg,
+                                            unfocusedBorderColor = colors.cardBorder,
+                                            focusedTextColor = colors.textPrimary,
+                                            unfocusedTextColor = colors.textPrimary,
+                                            focusedContainerColor = colors.surfaceVariant,
+                                            unfocusedContainerColor = colors.surfaceVariant
                                         ),
                                         modifier = Modifier.fillMaxWidth()
                                     )
@@ -300,15 +310,19 @@ class FileManagerActivity : ComponentActivity() {
                                                 if (isPhoneStorage) renamePhoneFile(targetFile, newName) else renamePcFile(targetFile, newName)
                                             }
                                         },
-                                        shape = RoundedCornerShape(50),
+                                        shape = RoundedCornerShape(25.dp),
                                         colors = ButtonDefaults.buttonColors(
-                                            containerColor = PillPrimary,
-                                            contentColor = PillPrimaryContent
+                                            containerColor = colors.scanPillBg,
+                                            contentColor = colors.scanPillContent
                                         ),
-                                        modifier = Modifier.fillMaxWidth()
+                                        modifier = Modifier.fillMaxWidth().height(48.dp)
                                     ) {
-                                        Text("Rename", fontWeight = FontWeight.Bold)
+                                        Text("Rename", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                     }
+                                }
+                            }
+                        }
+                    }
                                 }
                             }
                         }
