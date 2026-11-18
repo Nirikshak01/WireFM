@@ -39,6 +39,7 @@ val PopupBorderBlue = Color(0xFF2F8BF0)
 val FolderCardDark = Color(0xFFCCD8DA)
 val FolderCardLight = Color(0xFFB9C7CB)
 val FolderIconDark = Color(0xFF1C2226)
+val FolderColor = Color(0xFF60A5FA)
 
 val ImageColor = Color(0xFFF472B6)
 val VideoColor = Color(0xFFA78BFA)

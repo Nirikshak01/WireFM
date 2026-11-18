@@ -309,7 +309,7 @@ fun FileManagerScreen(
                         // 3-Column Grid matching Figma Image 1 & 2
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(3),
-                            contentPadding = PaddingValues(horizontal = 14.dp, top = 8.dp, bottom = 96.dp),
+                            contentPadding = PaddingValues(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 96.dp),
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                             modifier = Modifier.fillMaxSize()
@@ -325,7 +325,7 @@ fun FileManagerScreen(
                     } else {
                         // List View
                         LazyColumn(
-                            contentPadding = PaddingValues(horizontal = 12.dp, top = 6.dp, bottom = 96.dp),
+                            contentPadding = PaddingValues(start = 12.dp, end = 12.dp, top = 6.dp, bottom = 96.dp),
                             modifier = Modifier.fillMaxSize()
                         ) {
                             items(filteredFiles, key = { it.path }) { file ->

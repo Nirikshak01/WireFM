@@ -16,6 +16,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -319,10 +320,6 @@ class FileManagerActivity : ComponentActivity() {
                                     ) {
                                         Text("Rename", fontWeight = FontWeight.Bold, fontSize = 15.sp)
                                     }
-                                }
-                            }
-                        }
-                    }
                                 }
                             }
                         }
