@@ -15,3 +15,11 @@ local.properties
 # OS files
 .DS_Store
 Thumbs.db
+
+# Node & Frontend
+node_modules/
+*/node_modules/
+dist/
+*/dist/
+.pnpm-store/
+
