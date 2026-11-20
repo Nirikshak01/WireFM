@@ -2,12 +2,26 @@ package main
 
 import (
 	"embed"
+	"os"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
 	"github.com/wailsapp/wails/v2/pkg/options/assetserver"
 	"github.com/wailsapp/wails/v2/pkg/options/linux"
 )
+
+func init() {
+	// Fix for WebKitGTK DMA-BUF renderer black screen bug on Arch Linux / Wayland / Hyprland
+	if os.Getenv("WEBKIT_DISABLE_DMABUF_RENDERER") == "" {
+		os.Setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
+	}
+	if os.Getenv("WEBKIT_DISABLE_COMPOSITING_MODE") == "" {
+		os.Setenv("WEBKIT_DISABLE_COMPOSITING_MODE", "1")
+	}
+	if os.Getenv("JSC_SIGNAL_FOR_GC") == "" {
+		os.Setenv("JSC_SIGNAL_FOR_GC", "SIGUSR2")
+	}
+}
 
 //go:embed all:frontend/dist
 var assets embed.FS
@@ -36,6 +50,7 @@ func main() {
 		Linux: &linux.Options{
 			Icon:                icon,
 			WindowIsTranslucent: false,
+			WebviewGpuPolicy:    linux.WebviewGpuPolicyNever,
 		},
 	})
 

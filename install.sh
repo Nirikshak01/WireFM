@@ -1,12 +1,17 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# WireFM One-Command Installer
-# Usage: curl -sSL https://raw.githubusercontent.com/jasmin1727/WireFM/main/install.sh | bash
+# WireFM One-Command Installer (Desktop GUI + CLI Server)
+# Usage: curl -sSL https://raw.githubusercontent.com/Nirikshak01/WireFM/main/install.sh | bash
 # ==============================================================================
 
 set -e
 
-echo -e "\033[35m"
+REPO_OWNER="Nirikshak01"
+REPO_NAME="WireFM"
+RELEASE_BASE="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/latest/download"
+RAW_BASE="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/main"
+
+echo -e "\033[36m"
 echo "  ██╗    ██╗██╗██████╗ ███████╗███████╗███╗   ███╗"
 echo "  ██║    ██║██║██╔══██╗██╔════╝██╔════╝████╗ ████║"
 echo "  ██║ █╗ ██║██║██████╔╝█████╗  █████╗  ██╔████╔██║"
@@ -14,45 +19,77 @@ echo "  ██║███╗██║██║██╔══██╗██╔
 echo "  ╚███╔███╔╝██║██║  ██║███████╗██║     ██║ ╚═╝ ██║"
 echo "   ╚══╝╚══╝ ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝     ╚═╝"
 echo -e "\033[0m"
-echo "  Installing WireFM (Lightweight Wireless File Manager)..."
+echo "  Installing WireFM Desktop GUI & CLI Server..."
 echo "─────────────────────────────────────────────────────────────"
 
-INSTALL_DIR="$HOME/.local/bin"
-mkdir -p "$INSTALL_DIR"
+INSTALL_BIN="$HOME/.local/bin"
+APP_DIR="$HOME/.local/share/applications"
+ICON_DIR="$HOME/.local/share/icons/hicolor/512x512/apps"
+ICON_DIR_SCALABLE="$HOME/.local/share/icons/hicolor/scalable/apps"
+PIXMAPS_DIR="$HOME/.local/share/pixmaps"
 
-# Try downloading pre-built binary first (Ultra-fast 2-second install)
-RELEASE_URL="https://github.com/jasmin1727/WireFM/releases/latest/download/wirefm-linux-amd64"
-if curl -sL --fail "$RELEASE_URL" -o "$INSTALL_DIR/wirefm" 2>/dev/null; then
-    chmod +x "$INSTALL_DIR/wirefm"
-    echo "⚡ Downloaded pre-compiled binary instantly!"
-else
-    # Fallback to source compilation if needed
-    if ! command -v go &>/dev/null; then
-        echo "⚠️  Go compiler not found. Installing via package manager..."
-        if command -v pacman &>/dev/null; then
-            sudo pacman -S --noconfirm go
-        elif command -v apt &>/dev/null; then
-            sudo apt update && sudo apt install -y golang
-        fi
+mkdir -p "$INSTALL_BIN" "$APP_DIR" "$ICON_DIR" "$ICON_DIR_SCALABLE" "$PIXMAPS_DIR"
+
+# 1. Download WireFM Desktop GUI
+echo "📦 Downloading WireFM Desktop GUI..."
+if ! curl -sL --fail "${RELEASE_BASE}/wirefm-desktop-linux-amd64" -o "$INSTALL_BIN/wirefm-desktop"; then
+    echo "⚠️  Remote download failed, checking local copy..."
+    if [ -f "$HOME/wirefm-desktop" ]; then
+        cp "$HOME/wirefm-desktop" "$INSTALL_BIN/wirefm-desktop"
     fi
+fi
+chmod +x "$INSTALL_BIN/wirefm-desktop" 2>/dev/null || true
 
-    TEMP_DIR=$(mktemp -d)
-    echo "📦 Compiling from source..."
-    git clone --depth 1 https://github.com/jasmin1727/WireFM.git "$TEMP_DIR" 2>/dev/null || cp -r /home/jasmin/Projects/wirefm "$TEMP_DIR/wirefm"
+# 2. Download WireFM CLI Server
+echo "⚡ Downloading WireFM CLI Server..."
+curl -sL --fail "${RELEASE_BASE}/wirefm-linux-amd64" -o "$INSTALL_BIN/wirefm" 2>/dev/null || true
+chmod +x "$INSTALL_BIN/wirefm" 2>/dev/null || true
 
-    cd "$TEMP_DIR/wirefm/server" 2>/dev/null || cd "$TEMP_DIR/server"
-    go build -o "$INSTALL_DIR/wirefm" .
-    chmod +x "$INSTALL_DIR/wirefm"
+# 3. Install App Icon
+echo "🎨 Installing Official WireFM App Icons..."
+if ! curl -sL --fail "${RAW_BASE}/desktop/appicon.png" -o "$ICON_DIR/wirefm.png"; then
+    if [ -f "/home/jasmin/Projects/wirefm/desktop/appicon.png" ]; then
+        cp "/home/jasmin/Projects/wirefm/desktop/appicon.png" "$ICON_DIR/wirefm.png"
+    fi
+fi
+cp "$ICON_DIR/wirefm.png" "$PIXMAPS_DIR/wirefm.png" 2>/dev/null || true
+curl -sL --fail "${RAW_BASE}/Assets/wireframe-layer-dark-bg-redus.svg" -o "$ICON_DIR_SCALABLE/wirefm.svg" 2>/dev/null || true
+
+# 4. Create Desktop Entry in Applications Menu
+echo "🚀 Creating Linux Application Menu Launcher..."
+cat > "$APP_DIR/wirefm.desktop" << 'EOF'
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=WireFM
+GenericName=Wireless File Manager
+Comment=Ultra-fast wireless file sharing and desktop manager
+Exec=env WEBKIT_DISABLE_DMABUF_RENDERER=1 WEBKIT_DISABLE_COMPOSITING_MODE=1 JSC_SIGNAL_FOR_GC=SIGUSR2 wirefm-desktop %U
+Icon=wirefm
+Terminal=false
+Categories=Utility;FileManager;Network;FileTransfer;
+StartupWMClass=WireFM
+Keywords=wirefm;file;manager;wireless;transfer;wifi;share;phone;android;
+EOF
+chmod +x "$APP_DIR/wirefm.desktop"
+
+# Refresh desktop & icon databases
+update-desktop-database "$APP_DIR" 2>/dev/null || true
+gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || true
+
+# 5. Ensure ~/.local/bin is in PATH
+if [[ ":$PATH:" != *":$INSTALL_BIN:"* ]]; then
+    echo "export PATH=\"\$PATH:$INSTALL_BIN\"" >> ~/.bashrc 2>/dev/null || true
+    [ -f ~/.zshrc ] && echo "export PATH=\"\$PATH:$INSTALL_BIN\"" >> ~/.zshrc 2>/dev/null || true
+    if [ -d "$HOME/.config/fish" ]; then
+        mkdir -p "$HOME/.config/fish"
+        touch "$HOME/.config/fish/config.fish"
+        echo "fish_add_path $INSTALL_BIN" >> "$HOME/.config/fish/config.fish" 2>/dev/null || true
+    fi
 fi
 
-# Make sure ~/.local/bin is in PATH
-if [[ ":$PATH:" != *":$INSTALL_DIR:"* ]]; then
-    echo "export PATH=\"\$PATH:$INSTALL_DIR\"" >> ~/.bashrc
-    [ -f ~/.zshrc ] && echo "export PATH=\"\$PATH:$INSTALL_DIR\"" >> ~/.zshrc
-    [ -f ~/.config/fish/config.fish ] && echo "fish_add_path $INSTALL_DIR" >> ~/.config/fish/config.fish
-fi
-
-echo "✅ Installed successfully to $INSTALL_DIR/wirefm"
 echo "─────────────────────────────────────────────────────────────"
-echo "👉 Run with: wirefm"
-echo "👉 Or run:   wirefm /path/to/folder"
+echo "✅ WireFM Desktop & CLI installed successfully!"
+echo "✨ WireFM is now available in your Application Menu (with logo)!"
+echo "👉 Run from App Menu or terminal: wirefm-desktop"
+echo "👉 CLI Server command: wirefm"

@@ -75,16 +75,16 @@
 
 ## 🚀 Quick Start (PC)
 
-### 1-Line Install (Arch / Ubuntu / Debian / Fedora):
+### 1-Line Install (Arch / Ubuntu / Debian / Fedora / Hyprland):
 ```bash
-curl -sSL https://raw.githubusercontent.com/jasmin1727/WireFM/main/install.sh | bash
+curl -sSL https://raw.githubusercontent.com/Nirikshak01/WireFM/main/install.sh | bash
 ```
+*This installs both **WireFM Desktop GUI** (with desktop entry & logo in your Application Menu) and the **WireFM CLI Server**!*
 
 ### Run WireFM:
-```bash
-wirefm
-```
-*(Or specify a custom directory to share: `wirefm /path/to/folder`)*
+- **From Application Menu (Rofi, Wofi, GNOME, KDE, Hyprland)**: Click **WireFM** with its official logo!
+- **Or Desktop GUI via terminal**: `wirefm-desktop`
+- **Or CLI Server via terminal**: `wirefm` *(Or share a custom directory: `wirefm /path/to/folder`)*
 
 Terminal will show:
 1. Local IP & WebDAV endpoints.
