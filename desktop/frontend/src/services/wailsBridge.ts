@@ -1,4 +1,4 @@
-import { QrData, ConnectionInfo, FileEntry } from '../types'
+import { QrData, ConnectionInfo, FileEntry, ConnectedDevice } from '../types'
 
 // Wails bindings interface
 interface WailsApp {
@@ -6,11 +6,20 @@ interface WailsApp {
   GetConnectionStatus: () => Promise<ConnectionInfo>
   SetConnectedDevice: (deviceName: string, deviceIP: string) => Promise<void>
   DisconnectDevice: () => Promise<void>
+  GetConnectedDevices: () => Promise<ConnectedDevice[]>
+  RemoveConnectedDevice: (id: string) => Promise<void>
   ListLocalDirectory: (path: string) => Promise<FileEntry[]>
   ListRemoteDirectory: (path: string) => Promise<FileEntry[]>
   UploadFiles: (targetDir: string, filePaths: string[]) => Promise<void>
   DownloadFile: (remotePath: string, localTargetDir: string) => Promise<void>
   OpenPath: (path: string) => Promise<void>
+  RenameFile: (oldPath: string, newName: string) => Promise<void>
+  DeleteFile: (path: string) => Promise<void>
+  CreateFolder: (parentPath: string, folderName: string) => Promise<void>
+  CopyFile: (srcPath: string, destDir: string) => Promise<void>
+  MoveFile: (srcPath: string, destDir: string) => Promise<void>
+  OpenWith: (path: string, appName: string) => Promise<void>
+  GetFileContentBase64: (path: string) => Promise<string>
 }
 
 function getWailsApp(): WailsApp | null {
@@ -53,6 +62,23 @@ export const WailsBridge = {
     }
   },
 
+  async getConnectedDevices(): Promise<ConnectedDevice[]> {
+    const app = getWailsApp()
+    if (app) {
+      return await app.GetConnectedDevices()
+    }
+    return [
+      { id: 'dev_vivo', name: 'Vivo y36', ip: '192.168.1.42', status: 'Connected', last_seen: 'Just now' }
+    ]
+  },
+
+  async removeConnectedDevice(id: string): Promise<void> {
+    const app = getWailsApp()
+    if (app) {
+      return await app.RemoveConnectedDevice(id)
+    }
+  },
+
   async setConnectedDevice(deviceName: string, deviceIP: string): Promise<void> {
     const app = getWailsApp()
     if (app) {
@@ -80,11 +106,11 @@ export const WailsBridge = {
       { name: 'Music', path: '/home/user/Music', is_dir: true, size: 0, mod_time: '', ext: '' },
       { name: 'Pictures', path: '/home/user/Pictures', is_dir: true, size: 0, mod_time: '', ext: '' },
       { name: 'Videos', path: '/home/user/Videos', is_dir: true, size: 0, mod_time: '', ext: '' },
-      { name: 'Projects', path: '/home/user/Projects', is_dir: true, size: 0, mod_time: '', ext: '' },
-      { name: 'notes.txt', path: '/home/user/notes.txt', is_dir: false, size: 1024, mod_time: '', ext: 'txt' },
-      { name: 'report.pdf', path: '/home/user/report.pdf', is_dir: false, size: 2048500, mod_time: '', ext: 'pdf' },
-      { name: 'app.apk', path: '/home/user/app.apk', is_dir: false, size: 14500000, mod_time: '', ext: 'apk' },
+      { name: 'Wallpapers', path: '/home/user/Wallpapers', is_dir: true, size: 0, mod_time: '', ext: '' },
       { name: 'photo.jpg', path: '/home/user/photo.jpg', is_dir: false, size: 3400000, mod_time: '', ext: 'jpg' },
+      { name: 'video.mp4', path: '/home/user/video.mp4', is_dir: false, size: 18400000, mod_time: '', ext: 'mp4' },
+      { name: 'audio.mp3', path: '/home/user/audio.mp3', is_dir: false, size: 4500000, mod_time: '', ext: 'mp3' },
+      { name: 'document.pdf', path: '/home/user/document.pdf', is_dir: false, size: 2048500, mod_time: '', ext: 'pdf' },
     ]
   },
 
@@ -122,5 +148,55 @@ export const WailsBridge = {
     if (app) {
       return await app.OpenPath(path)
     }
+  },
+
+  async renameFile(oldPath: string, newName: string): Promise<void> {
+    const app = getWailsApp()
+    if (app) {
+      return await app.RenameFile(oldPath, newName)
+    }
+  },
+
+  async deleteFile(path: string): Promise<void> {
+    const app = getWailsApp()
+    if (app) {
+      return await app.DeleteFile(path)
+    }
+  },
+
+  async createFolder(parentPath: string, folderName: string): Promise<void> {
+    const app = getWailsApp()
+    if (app) {
+      return await app.CreateFolder(parentPath, folderName)
+    }
+  },
+
+  async copyFile(srcPath: string, destDir: string): Promise<void> {
+    const app = getWailsApp()
+    if (app) {
+      return await app.CopyFile(srcPath, destDir)
+    }
+  },
+
+  async moveFile(srcPath: string, destDir: string): Promise<void> {
+    const app = getWailsApp()
+    if (app) {
+      return await app.MoveFile(srcPath, destDir)
+    }
+  },
+
+  async openWith(path: string, appName: string): Promise<void> {
+    const app = getWailsApp()
+    if (app) {
+      return await app.OpenWith(path, appName)
+    }
+  },
+
+  async getFileContentBase64(path: string): Promise<string> {
+    const app = getWailsApp()
+    if (app) {
+      return await app.GetFileContentBase64(path)
+    }
+    return ''
   },
 }

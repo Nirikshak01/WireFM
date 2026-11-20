@@ -5,30 +5,42 @@ import { BreadcrumbBar } from './components/BreadcrumbBar'
 import { FileBrowser } from './components/FileBrowser'
 import { DropOverlay } from './components/DropOverlay'
 import { ContextMenu } from './components/ContextMenu'
+import { MediaPreviewModal } from './components/MediaPreviewModal'
 import { WailsBridge } from './services/wailsBridge'
-import { Place, ViewMode, QrData, ConnectionInfo, FileEntry } from './types'
+import {
+  Place,
+  ViewMode,
+  QrData,
+  FileEntry,
+  ConnectedDevice,
+  ClipboardState,
+} from './types'
+import { Copy, Scissors, Trash2, X } from 'lucide-react'
 
 export default function App() {
-  // App navigation state: defaults to 'scanner' per user requirement
+  // Navigation
   const [activePlace, setActivePlace] = useState<Place | 'device' | 'scanner'>('scanner')
+  const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null)
   const [currentPath, setCurrentPath] = useState<string>('~')
   const [pathHistory, setPathHistory] = useState<string[]>([])
 
-  // Pairing & Connection state
+  // Pairing & Multi-Device state
   const [qrData, setQrData] = useState<QrData | null>(null)
   const [isQrLoading, setIsQrLoading] = useState<boolean>(true)
-  const [connectionInfo, setConnectionInfo] = useState<ConnectionInfo>({
-    is_connected: false,
-    device_name: 'Vivo y36',
-    device_ip: '',
-    status: 'Waiting for scan',
-  })
+  const [connectedDevices, setConnectedDevices] = useState<ConnectedDevice[]>([])
 
   // File browser state
   const [files, setFiles] = useState<FileEntry[]>([])
   const [isFilesLoading, setIsFilesLoading] = useState<boolean>(false)
   const [searchQuery, setSearchQuery] = useState<string>('')
   const [viewMode, setViewMode] = useState<ViewMode>('grid')
+  const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set())
+
+  // Clipboard (Copy/Cut/Paste)
+  const [clipboard, setClipboard] = useState<ClipboardState | null>(null)
+
+  // Media preview modal
+  const [previewFile, setPreviewFile] = useState<FileEntry | null>(null)
 
   // Drag and drop state
   const [isDragging, setIsDragging] = useState<boolean>(false)
@@ -37,8 +49,14 @@ export default function App() {
   const [contextMenu, setContextMenu] = useState<{
     x: number
     y: number
-    file: FileEntry
+    file: FileEntry | null
   } | null>(null)
+
+  // Modals for New Folder & Rename
+  const [showNewFolderModal, setShowNewFolderModal] = useState<boolean>(false)
+  const [newFolderName, setNewFolderName] = useState<string>('')
+  const [fileToRename, setFileToRename] = useState<FileEntry | null>(null)
+  const [renameValue, setRenameValue] = useState<string>('')
 
   // Toast notification
   const [toast, setToast] = useState<string | null>(null)
@@ -61,37 +79,32 @@ export default function App() {
     }
   }, [])
 
-  // Poll connection status
-  const checkConnection = useCallback(async () => {
+  // Poll connection status & connected devices
+  const checkDevices = useCallback(async () => {
     try {
-      const status = await WailsBridge.getConnectionStatus()
-      setConnectionInfo(status)
-
-      // Auto-transition to phone device when newly connected
-      if (status.is_connected && activePlace === 'scanner') {
-        setActivePlace('device')
-        setCurrentPath('/storage/emulated/0')
-      }
+      const devs = await WailsBridge.getConnectedDevices()
+      setConnectedDevices(devs)
     } catch (err) {
-      console.error('Failed to check connection:', err)
+      console.error('Failed to get connected devices:', err)
     }
-  }, [activePlace])
+  }, [])
 
   useEffect(() => {
     loadQrData()
-    checkConnection()
+    checkDevices()
 
     const interval = setInterval(() => {
-      checkConnection()
+      checkDevices()
     }, 2500)
 
     return () => clearInterval(interval)
-  }, [loadQrData, checkConnection])
+  }, [loadQrData, checkDevices])
 
   // Load directory files
   const loadDirectory = useCallback(
     async (path: string, isRemote: boolean) => {
       setIsFilesLoading(true)
+      setSelectedPaths(new Set())
       try {
         let entries: FileEntry[] = []
         if (isRemote) {
@@ -114,6 +127,7 @@ export default function App() {
   const handleSelectPlace = useCallback(
     (place: Place) => {
       setActivePlace(place)
+      setActiveDeviceId(null)
       const targetPath = place === 'home' ? '~' : place
       setPathHistory((prev) => [...prev, currentPath])
       setCurrentPath(targetPath)
@@ -123,13 +137,31 @@ export default function App() {
   )
 
   // Select Device
-  const handleSelectDevice = useCallback(() => {
-    setActivePlace('device')
-    const phoneRoot = '/storage/emulated/0'
-    setPathHistory((prev) => [...prev, currentPath])
-    setCurrentPath(phoneRoot)
-    loadDirectory(phoneRoot, true)
-  }, [currentPath, loadDirectory])
+  const handleSelectDevice = useCallback(
+    (device: ConnectedDevice) => {
+      setActivePlace('device')
+      setActiveDeviceId(device.id)
+      const phoneRoot = '/storage/emulated/0'
+      setPathHistory((prev) => [...prev, currentPath])
+      setCurrentPath(phoneRoot)
+      loadDirectory(phoneRoot, true)
+    },
+    [currentPath, loadDirectory]
+  )
+
+  // Disconnect Device
+  const handleDisconnectDevice = useCallback(
+    async (deviceId: string) => {
+      await WailsBridge.removeConnectedDevice(deviceId)
+      checkDevices()
+      if (activeDeviceId === deviceId) {
+        setActivePlace('scanner')
+        setActiveDeviceId(null)
+      }
+      showToast('Device disconnected')
+    },
+    [activeDeviceId, checkDevices, showToast]
+  )
 
   // Open Folder
   const handleOpenFolder = useCallback(
@@ -183,6 +215,111 @@ export default function App() {
     }
   }, [activePlace, currentPath, loadQrData, loadDirectory])
 
+  // Clipboard operations
+  const handleCopy = useCallback(
+    (file: FileEntry) => {
+      const itemsToCopy = selectedPaths.has(file.path)
+        ? files.filter((f) => selectedPaths.has(f.path))
+        : [file]
+      setClipboard({
+        action: 'copy',
+        files: itemsToCopy,
+        sourcePath: currentPath,
+      })
+      showToast(`Copied ${itemsToCopy.length} item(s)`)
+    },
+    [selectedPaths, files, currentPath, showToast]
+  )
+
+  const handleCut = useCallback(
+    (file: FileEntry) => {
+      const itemsToCut = selectedPaths.has(file.path)
+        ? files.filter((f) => selectedPaths.has(f.path))
+        : [file]
+      setClipboard({
+        action: 'cut',
+        files: itemsToCut,
+        sourcePath: currentPath,
+      })
+      showToast(`Cut ${itemsToCut.length} item(s)`)
+    },
+    [selectedPaths, files, currentPath, showToast]
+  )
+
+  const handlePaste = useCallback(async () => {
+    if (!clipboard || clipboard.files.length === 0) return
+
+    showToast(`Pasting ${clipboard.files.length} item(s)...`)
+    try {
+      for (const f of clipboard.files) {
+        if (clipboard.action === 'cut') {
+          await WailsBridge.moveFile(f.path, currentPath)
+        } else {
+          await WailsBridge.copyFile(f.path, currentPath)
+        }
+      }
+      if (clipboard.action === 'cut') {
+        setClipboard(null)
+      }
+      showToast('Pasted successfully')
+      handleRefresh()
+    } catch (err) {
+      console.error('Failed to paste:', err)
+      showToast('Paste operation failed')
+    }
+  }, [clipboard, currentPath, showToast, handleRefresh])
+
+  // Delete
+  const handleDelete = useCallback(
+    async (file: FileEntry) => {
+      const itemsToDelete = selectedPaths.has(file.path)
+        ? files.filter((f) => selectedPaths.has(f.path))
+        : [file]
+
+      try {
+        for (const f of itemsToDelete) {
+          await WailsBridge.deleteFile(f.path)
+        }
+        showToast(`Deleted ${itemsToDelete.length} item(s)`)
+        handleRefresh()
+      } catch (err) {
+        console.error('Delete error:', err)
+        showToast('Delete failed')
+      }
+    },
+    [selectedPaths, files, showToast, handleRefresh]
+  )
+
+  // Create Folder
+  const handleCreateFolder = useCallback(async () => {
+    if (!newFolderName.trim()) return
+    try {
+      await WailsBridge.createFolder(currentPath, newFolderName.trim())
+      setShowNewFolderModal(false)
+      setNewFolderName('')
+      showToast('Folder created')
+      handleRefresh()
+    } catch (err) {
+      console.error('Create folder error:', err)
+      showToast('Failed to create folder')
+    }
+  }, [newFolderName, currentPath, showToast, handleRefresh])
+
+  // Rename
+  const handleRenameConfirm = useCallback(async () => {
+    if (!fileToRename || !renameValue.trim()) return
+    try {
+      await WailsBridge.renameFile(fileToRename.path, renameValue.trim())
+      setFileToRename(null)
+      setRenameValue('')
+      showToast('Renamed successfully')
+      handleRefresh()
+    } catch (err) {
+      console.error('Rename error:', err)
+      showToast('Failed to rename')
+    }
+  }, [fileToRename, renameValue, showToast, handleRefresh])
+
   // Filtered files by search
   const filteredFiles = useMemo(() => {
     if (!searchQuery.trim()) return files
@@ -224,7 +361,7 @@ export default function App() {
   )
 
   // Context Menu
-  const handleContextMenu = useCallback((e: React.MouseEvent, file: FileEntry) => {
+  const handleContextMenu = useCallback((e: React.MouseEvent, file: FileEntry | null) => {
     e.preventDefault()
     setContextMenu({
       x: e.clientX,
@@ -246,23 +383,30 @@ export default function App() {
       {/* Places & Devices Sidebar */}
       <Sidebar
         activePlace={activePlace}
+        activeDeviceId={activeDeviceId}
         onSelectPlace={handleSelectPlace}
         onSelectDevice={handleSelectDevice}
+        onDisconnectDevice={handleDisconnectDevice}
         onSelectScanner={() => setActivePlace('scanner')}
-        connectionInfo={connectionInfo}
+        connectedDevices={connectedDevices}
       />
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden bg-brand-bg">
+      <main className="flex-1 flex flex-col h-full overflow-hidden bg-brand-bg relative">
         {activePlace === 'scanner' ? (
           <ScannerCard
             qrData={qrData}
             isLoading={isQrLoading}
             onRefreshQr={loadQrData}
             onSimulateConnect={() => {
-              setActivePlace('device')
-              setCurrentPath('/storage/emulated/0')
-              loadDirectory('/storage/emulated/0', true)
+              const mockDev: ConnectedDevice = {
+                id: 'vivo_mock',
+                name: 'Vivo y36',
+                ip: '192.168.1.42',
+                status: 'Connected',
+              }
+              setConnectedDevices([mockDev])
+              handleSelectDevice(mockDev)
             }}
           />
         ) : (
@@ -282,17 +426,75 @@ export default function App() {
               }
             />
 
+            {/* Multi-Selection Floating Action Bar */}
+            {selectedPaths.size > 0 && (
+              <div className="absolute top-16 left-1/2 -translate-x-1/2 z-40 px-5 py-2 rounded-2xl bg-brand-surface/90 border border-brand-blue/50 shadow-2xl backdrop-blur-md flex items-center gap-4 text-xs font-bold text-white animate-fadeIn">
+                <span className="text-brand-blue">{selectedPaths.size} selected</span>
+                <div className="h-4 w-[1px] bg-white/10" />
+                <button
+                  onClick={() => {
+                    const firstFile = files.find((f) => selectedPaths.has(f.path))
+                    if (firstFile) handleCopy(firstFile)
+                  }}
+                  className="flex items-center gap-1.5 hover:text-brand-blue transition-colors"
+                >
+                  <Copy className="w-3.5 h-3.5" />
+                  <span>Copy</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const firstFile = files.find((f) => selectedPaths.has(f.path))
+                    if (firstFile) handleCut(firstFile)
+                  }}
+                  className="flex items-center gap-1.5 hover:text-amber-400 transition-colors"
+                >
+                  <Scissors className="w-3.5 h-3.5" />
+                  <span>Cut</span>
+                </button>
+                <button
+                  onClick={() => {
+                    const firstFile = files.find((f) => selectedPaths.has(f.path))
+                    if (firstFile) handleDelete(firstFile)
+                  }}
+                  className="flex items-center gap-1.5 hover:text-rose-400 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete</span>
+                </button>
+                <button
+                  onClick={() => setSelectedPaths(new Set())}
+                  className="p-1 rounded-full hover:bg-white/10 text-brand-textTertiary hover:text-white transition-colors"
+                  title="Clear Selection"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
             <FileBrowser
               files={filteredFiles}
               viewMode={viewMode}
               isLoading={isFilesLoading}
+              selectedPaths={selectedPaths}
+              onSelectionChange={setSelectedPaths}
               onOpenFolder={handleOpenFolder}
               onOpenFile={handleOpenFile}
+              onPreviewMedia={(file) => setPreviewFile(file)}
               onContextMenu={handleContextMenu}
             />
           </div>
         )}
       </main>
+
+      {/* Media Preview Modal */}
+      {previewFile && (
+        <MediaPreviewModal
+          file={previewFile}
+          onClose={() => setPreviewFile(null)}
+          onDownload={handleOpenFile}
+          onOpenSystem={handleOpenFile}
+        />
+      )}
 
       {/* Right Click Context Menu */}
       {contextMenu && (
@@ -301,17 +503,99 @@ export default function App() {
           y={contextMenu.y}
           file={contextMenu.file}
           isRemote={activePlace === 'device'}
+          clipboard={clipboard}
           onClose={() => setContextMenu(null)}
           onOpen={handleOpenFile}
+          onPreview={(f) => setPreviewFile(f)}
+          onOpenWith={handleOpenFile}
+          onCopy={handleCopy}
+          onCut={handleCut}
+          onPaste={handlePaste}
+          onRename={(f) => {
+            setFileToRename(f)
+            setRenameValue(f.name)
+          }}
+          onDelete={handleDelete}
           onDownload={handleOpenFile}
           onCopyPath={(f) => {
             navigator.clipboard.writeText(f.path)
             showToast('Path copied to clipboard')
           }}
+          onNewFolder={() => setShowNewFolderModal(true)}
+          onRefresh={handleRefresh}
         />
       )}
 
-      {/* Bottom Floating Toast Notification */}
+      {/* Create New Folder Modal */}
+      {showNewFolderModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="w-full max-w-sm rounded-3xl bg-brand-surface border border-brand-border p-6 shadow-2xl flex flex-col gap-4">
+            <h3 className="text-base font-bold text-white">Create New Folder</h3>
+            <input
+              type="text"
+              value={newFolderName}
+              onChange={(e) => setNewFolderName(e.target.value)}
+              placeholder="Folder name"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleCreateFolder()
+                if (e.key === 'Escape') setShowNewFolderModal(false)
+              }}
+              className="w-full px-4 py-2.5 rounded-xl bg-brand-bg border border-brand-border text-sm text-white focus:outline-none focus:border-brand-blue"
+            />
+            <div className="flex items-center justify-end gap-2 mt-2">
+              <button
+                onClick={() => setShowNewFolderModal(false)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-brand-textSecondary hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateFolder}
+                className="px-4 py-2 rounded-xl bg-brand-blue text-white text-xs font-bold hover:bg-brand-blueHover transition-colors"
+              >
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Rename File Modal */}
+      {fileToRename && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fadeIn">
+          <div className="w-full max-w-sm rounded-3xl bg-brand-surface border border-brand-border p-6 shadow-2xl flex flex-col gap-4">
+            <h3 className="text-base font-bold text-white">Rename</h3>
+            <input
+              type="text"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleRenameConfirm()
+                if (e.key === 'Escape') setFileToRename(null)
+              }}
+              className="w-full px-4 py-2.5 rounded-xl bg-brand-bg border border-brand-border text-sm text-white focus:outline-none focus:border-brand-blue"
+            />
+            <div className="flex items-center justify-end gap-2 mt-2">
+              <button
+                onClick={() => setFileToRename(null)}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-brand-textSecondary hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleRenameConfirm}
+                className="px-4 py-2 rounded-xl bg-brand-blue text-white text-xs font-bold hover:bg-brand-blueHover transition-colors"
+              >
+                Rename
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Toast Notification */}
       {toast && (
         <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-2.5 rounded-full bg-brand-card/95 border border-brand-border text-white text-xs font-bold shadow-2xl backdrop-blur-md animate-fadeIn flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-brand-blue animate-pulse" />

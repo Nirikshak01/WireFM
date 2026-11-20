@@ -32,6 +32,14 @@ type ConnectionInfo struct {
 	Status      string `json:"status"`
 }
 
+type ConnectedDeviceInfo struct {
+	ID       string `json:"id"`
+	Name     string `json:"name"`
+	IP       string `json:"ip"`
+	Status   string `json:"status"`
+	LastSeen string `json:"last_seen"`
+}
+
 type FileEntry struct {
 	Name    string `json:"name"`
 	Path    string `json:"path"`
@@ -51,13 +59,15 @@ type App struct {
 	activeDevice   string
 	deviceIP       string
 	isConnected    bool
+	devices        map[string]ConnectedDeviceInfo
 	connectedFiles []FileEntry
 }
 
 // NewApp creates a new App application struct
 func NewApp() *App {
 	return &App{
-		port: "8080",
+		port:    "8080",
+		devices: make(map[string]ConnectedDeviceInfo),
 	}
 }
 
@@ -175,6 +185,15 @@ func (a *App) SetConnectedDevice(deviceName, deviceIP string) {
 	a.activeDevice = deviceName
 	a.deviceIP = deviceIP
 	a.isConnected = true
+
+	devID := fmt.Sprintf("%s_%s", strings.ToLower(strings.ReplaceAll(deviceName, " ", "_")), deviceIP)
+	a.devices[devID] = ConnectedDeviceInfo{
+		ID:       devID,
+		Name:     deviceName,
+		IP:       deviceIP,
+		Status:   "Connected",
+		LastSeen: time.Now().Format("15:04:05"),
+	}
 }
 
 // DisconnectDevice disconnects the current device session
@@ -185,6 +204,43 @@ func (a *App) DisconnectDevice() {
 	a.activeDevice = ""
 	a.deviceIP = ""
 	a.isConnected = false
+}
+
+// GetConnectedDevices returns all actively connected devices
+func (a *App) GetConnectedDevices() []ConnectedDeviceInfo {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	var list []ConnectedDeviceInfo
+	for _, d := range a.devices {
+		list = append(list, d)
+	}
+
+	// If active device is set but map is empty, add it
+	if len(list) == 0 && a.isConnected && a.activeDevice != "" {
+		list = append(list, ConnectedDeviceInfo{
+			ID:       "default_phone",
+			Name:     a.activeDevice,
+			IP:       a.deviceIP,
+			Status:   "Connected",
+			LastSeen: time.Now().Format("15:04:05"),
+		})
+	}
+
+	return list
+}
+
+// RemoveConnectedDevice removes a connected device by id
+func (a *App) RemoveConnectedDevice(id string) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	delete(a.devices, id)
+	if len(a.devices) == 0 {
+		a.isConnected = false
+		a.activeDevice = ""
+		a.deviceIP = ""
+	}
 }
 
 func (a *App) resolvePath(reqPath string) string {
@@ -314,6 +370,102 @@ func (a *App) OpenPath(path string) error {
 	resolved := a.resolvePath(path)
 	cmd := exec.Command("xdg-open", resolved)
 	return cmd.Start()
+}
+
+// RenameFile renames or moves a file to a new name in same directory
+func (a *App) RenameFile(oldPath, newName string) error {
+	resolvedOld := a.resolvePath(oldPath)
+	dir := filepath.Dir(resolvedOld)
+	newPath := filepath.Join(dir, newName)
+	return os.Rename(resolvedOld, newPath)
+}
+
+// DeleteFile deletes a file or directory
+func (a *App) DeleteFile(path string) error {
+	resolved := a.resolvePath(path)
+	return os.RemoveAll(resolved)
+}
+
+// CreateFolder creates a new directory
+func (a *App) CreateFolder(parentPath, folderName string) error {
+	resolvedParent := a.resolvePath(parentPath)
+	newDir := filepath.Join(resolvedParent, folderName)
+	return os.MkdirAll(newDir, 0755)
+}
+
+// CopyFile copies a file to destination directory
+func (a *App) CopyFile(srcPath, destDir string) error {
+	resolvedSrc := a.resolvePath(srcPath)
+	resolvedDest := filepath.Join(a.resolvePath(destDir), filepath.Base(resolvedSrc))
+
+	input, err := os.ReadFile(resolvedSrc)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(resolvedDest, input, 0644)
+}
+
+// MoveFile moves a file to destination directory
+func (a *App) MoveFile(srcPath, destDir string) error {
+	resolvedSrc := a.resolvePath(srcPath)
+	resolvedDest := filepath.Join(a.resolvePath(destDir), filepath.Base(resolvedSrc))
+	return os.Rename(resolvedSrc, resolvedDest)
+}
+
+// OpenWith opens file with specified app or launches mime open
+func (a *App) OpenWith(path, appName string) error {
+	resolved := a.resolvePath(path)
+	if appName == "" {
+		return a.OpenPath(path)
+	}
+	cmd := exec.Command(appName, resolved)
+	return cmd.Start()
+}
+
+// GetFileContentBase64 reads an image/media file and returns a base64 data URL for in-app preview
+func (a *App) GetFileContentBase64(path string) (string, error) {
+	resolved := a.resolvePath(path)
+	info, err := os.Stat(resolved)
+	if err != nil {
+		return "", err
+	}
+
+	// Limit in-app base64 preview to files under 20MB
+	if info.Size() > 20*1024*1024 {
+		return "", fmt.Errorf("file too large for direct preview")
+	}
+
+	data, err := os.ReadFile(resolved)
+	if err != nil {
+		return "", err
+	}
+
+	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(resolved), "."))
+	mimeType := "application/octet-stream"
+	switch ext {
+	case "png":
+		mimeType = "image/png"
+	case "jpg", "jpeg":
+		mimeType = "image/jpeg"
+	case "webp":
+		mimeType = "image/webp"
+	case "gif":
+		mimeType = "image/gif"
+	case "svg":
+		mimeType = "image/svg+xml"
+	case "mp4":
+		mimeType = "video/mp4"
+	case "webm":
+		mimeType = "video/webm"
+	case "mp3":
+		mimeType = "audio/mpeg"
+	case "wav":
+		mimeType = "audio/wav"
+	case "ogg":
+		mimeType = "audio/ogg"
+	}
+
+	return fmt.Sprintf("data:%s;base64,%s", mimeType, base64.StdEncoding.EncodeToString(data)), nil
 }
 
 func ifThenElse(condition bool, a, b string) string {

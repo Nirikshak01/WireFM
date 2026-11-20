@@ -1,8 +1,9 @@
 package com.wirefm.app.ui.components
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,10 +16,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Archive
 import androidx.compose.material.icons.filled.AudioFile
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Code
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Folder
@@ -51,32 +54,43 @@ import com.wirefm.app.ui.theme.ImageColor
 import com.wirefm.app.ui.theme.VideoColor
 import com.wirefm.app.ui.theme.WireFMTheme
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FileItemGridCard(
     file: FileItem,
+    isSelected: Boolean = false,
+    isSelectionMode: Boolean = false,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val colors = WireFMTheme.colors
+    val selectionBlue = Color(0xFF2F8BF0)
 
     Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .clickable(onClick = onClick)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
             .padding(vertical = 4.dp, horizontal = 2.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        if (file.isDir) {
-            // Folder Shaped Card matching Figma Image 1 (#CCD8DA)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(76.dp)
-                    .clip(RoundedCornerShape(16.dp)),
-                contentAlignment = Alignment.Center
-            ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(76.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .then(
+                    if (isSelected) Modifier.border(2.5.dp, selectionBlue, RoundedCornerShape(16.dp))
+                    else Modifier
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            if (file.isDir) {
+                // Folder Shaped Card (#CCD8DA)
                 val folderCardColor = colors.folderCard
                 Canvas(modifier = Modifier.fillMaxSize()) {
                     val w = size.width
@@ -85,7 +99,6 @@ fun FileItemGridCard(
                     val tabW = w * 0.46f
                     val tabH = h * 0.18f
 
-                    // Draw tabbed folder shape
                     val folderPath = Path().apply {
                         moveTo(r, 0f)
                         lineTo(tabW - 10f, 0f)
@@ -103,35 +116,59 @@ fun FileItemGridCard(
                     }
                     drawPath(folderPath, color = folderCardColor)
                 }
+            } else {
+                // File Card
+                val (icon, _) = getFileIconAndColor(file)
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(colors.folderCard),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = colors.folderCardContent,
+                        modifier = Modifier.size(34.dp)
+                    )
+                }
             }
-        } else {
-            // File Card: Rounded rectangle in folder card color with file type icon
-            val (icon, _) = getFileIconAndColor(file)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(76.dp)
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(colors.folderCard),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = colors.folderCardContent,
-                    modifier = Modifier.size(34.dp)
-                )
+
+            // Selection Check Badge (Top-Right)
+            if (isSelectionMode || isSelected) {
+                Box(
+                    modifier = Modifier
+                        .size(22.dp)
+                        .align(Alignment.TopEnd)
+                        .padding(top = 4.dp, end = 4.dp)
+                        .clip(CircleShape)
+                        .background(if (isSelected) selectionBlue else Color.Black.copy(alpha = 0.4f))
+                        .then(
+                            if (!isSelected) Modifier.border(1.5.dp, Color.White.copy(alpha = 0.8f), CircleShape)
+                            else Modifier
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = "Selected",
+                            tint = Color.White,
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
             }
         }
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // File/Folder Name Label (bold 14sp below card)
+        // Label below
         Text(
             text = file.name,
             fontSize = 14.sp,
             fontWeight = FontWeight.Bold,
-            color = colors.textPrimary,
+            color = if (isSelected) selectionBlue else colors.textPrimary,
             textAlign = TextAlign.Center,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -140,24 +177,59 @@ fun FileItemGridCard(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun FileItemListRow(
     file: FileItem,
+    isSelected: Boolean = false,
+    isSelectionMode: Boolean = false,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     onMoreClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val (icon, tint) = getFileIconAndColor(file)
     val colors = WireFMTheme.colors
+    val selectionBlue = Color(0xFF2F8BF0)
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(14.dp))
-            .clickable { onClick() }
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = onLongClick
+            )
+            .background(if (isSelected) selectionBlue.copy(alpha = 0.15f) else Color.Transparent)
+            .then(
+                if (isSelected) Modifier.border(1.5.dp, selectionBlue, RoundedCornerShape(14.dp))
+                else Modifier
+            )
             .padding(horizontal = 14.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        // Selection Checkbox in List Mode
+        if (isSelectionMode || isSelected) {
+            Box(
+                modifier = Modifier
+                    .size(20.dp)
+                    .clip(CircleShape)
+                    .background(if (isSelected) selectionBlue else Color.Transparent)
+                    .border(1.5.dp, if (isSelected) selectionBlue else colors.textTertiary, CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isSelected) {
+                    Icon(
+                        imageVector = Icons.Default.Check,
+                        contentDescription = "Selected",
+                        tint = Color.White,
+                        modifier = Modifier.size(13.dp)
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(10.dp))
+        }
+
         // Icon container
         Box(
             modifier = Modifier
@@ -182,7 +254,7 @@ fun FileItemListRow(
                 text = file.name,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                color = colors.textPrimary,
+                color = if (isSelected) selectionBlue else colors.textPrimary,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

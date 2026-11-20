@@ -26,6 +26,25 @@ export type Place = 'home' | 'desktop' | 'documents' | 'downloads' | 'music' | '
 
 export type ViewMode = 'grid' | 'list'
 
+export interface ConnectedDevice {
+  id: string
+  name: string
+  ip: string
+  status: string
+  last_seen?: string
+}
+
+export interface ClipboardState {
+  action: 'copy' | 'cut'
+  files: FileEntry[]
+  sourcePath: string
+}
+
+export interface MediaPreviewItem {
+  file: FileEntry
+  url?: string
+}
+
 export interface BreadcrumbItem {
   name: string
   path: string

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="Assets/banner.png" alt="WireFM Banner" width="100%" />
+  <img src="Assets/wirefm-logo-banner-black.svg" alt="WireFM" width="480" />
 </p>
 
 <p align="center">

@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <title>Stacked layers icon</title>
+  <g fill="none" stroke="#111111" stroke-width="40" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M256 78 L390 154 L256 230 L122 154 Z"/>
+    <path d="M122 226 L256 302 L390 226"/>
+    <path d="M122 296 L256 372 L390 296"/>
+  </g>
+</svg>

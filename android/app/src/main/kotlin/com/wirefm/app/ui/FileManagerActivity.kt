@@ -14,43 +14,54 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import androidx.lifecycle.lifecycleScope
-import com.wirefm.app.R
+import coil.compose.AsyncImage
 import com.wirefm.app.model.FileItem
 import com.wirefm.app.model.PhoneCommand
 import com.wirefm.app.network.WireFMClient
 import com.wirefm.app.ui.screens.FileManagerScreen
-import com.wirefm.app.ui.theme.DarkCardBg
-import com.wirefm.app.ui.theme.DarkCardBorder
-import com.wirefm.app.ui.theme.PillPrimary
-import com.wirefm.app.ui.theme.PillPrimaryContent
-import com.wirefm.app.ui.theme.TextPrimary
-import com.wirefm.app.ui.theme.TextSecondary
 import com.wirefm.app.ui.theme.WireFMTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -78,7 +89,10 @@ class FileManagerActivity : ComponentActivity() {
     private var currentPhoneDir by mutableStateOf(Environment.getExternalStorageDirectory() ?: File("/"))
     private var fileList by mutableStateOf<List<FileItem>>(emptyList())
     private var isLoading by mutableStateOf(false)
+
+    // Clipboard
     private var clipboard by mutableStateOf<FileItem?>(null)
+    private var clipboardList by mutableStateOf<List<FileItem>>(emptyList())
     private var clipAction by mutableStateOf("")
     private var clipboardSource by mutableStateOf("")
 
@@ -87,6 +101,10 @@ class FileManagerActivity : ComponentActivity() {
     private var newFolderName by mutableStateOf("")
     private var fileToRename by mutableStateOf<FileItem?>(null)
     private var renameText by mutableStateOf("")
+
+    // Media preview & Download confirmation states
+    private var previewImageFile by mutableStateOf<FileItem?>(null)
+    private var confirmDownloadFile by mutableStateOf<FileItem?>(null)
 
     private var heartbeatJob: Job? = null
     private var phoneWorkerJob: Job? = null
@@ -158,11 +176,7 @@ class FileManagerActivity : ComponentActivity() {
                                     navigateToPc(file.path)
                                 }
                             } else {
-                                if (isPhoneStorage) {
-                                    openLocalFile(file)
-                                } else {
-                                    downloadPcFile(file)
-                                }
+                                handleFileClick(file)
                             }
                         },
                         onRefresh = {
@@ -190,12 +204,14 @@ class FileManagerActivity : ComponentActivity() {
                         },
                         onCopy = { file ->
                             clipboard = file
+                            clipboardList = listOf(file)
                             clipAction = "copy"
                             clipboardSource = if (isPhoneStorage) "phone" else "pc"
                             toast("Copied ${file.name}")
                         },
                         onCut = { file ->
                             clipboard = file
+                            clipboardList = listOf(file)
                             clipAction = "cut"
                             clipboardSource = if (isPhoneStorage) "phone" else "pc"
                             toast("Cut ${file.name}")
@@ -209,10 +225,30 @@ class FileManagerActivity : ComponentActivity() {
                         },
                         onShare = { file ->
                             sharePhoneFile(file)
+                        },
+                        onBatchCopy = { files ->
+                            clipboardList = files
+                            clipboard = files.firstOrNull()
+                            clipAction = "copy"
+                            clipboardSource = if (isPhoneStorage) "phone" else "pc"
+                            toast("Copied ${files.size} items")
+                        },
+                        onBatchCut = { files ->
+                            clipboardList = files
+                            clipboard = files.firstOrNull()
+                            clipAction = "cut"
+                            clipboardSource = if (isPhoneStorage) "phone" else "pc"
+                            toast("Cut ${files.size} items")
+                        },
+                        onBatchDelete = { files ->
+                            handleBatchDelete(files)
+                        },
+                        onBatchDownload = { files ->
+                            handleBatchDownload(files)
                         }
                     )
 
-                    // Create Folder Dialog
+                    // 1) Create Folder Dialog
                     if (showNewFolderDialog) {
                         Dialog(onDismissRequest = { showNewFolderDialog = false }) {
                             Box(
@@ -269,7 +305,7 @@ class FileManagerActivity : ComponentActivity() {
                         }
                     }
 
-                    // Rename File Dialog
+                    // 2) Rename File Dialog
                     fileToRename?.let { targetFile ->
                         Dialog(onDismissRequest = { fileToRename = null }) {
                             Box(
@@ -319,6 +355,146 @@ class FileManagerActivity : ComponentActivity() {
                                         modifier = Modifier.fillMaxWidth().height(48.dp)
                                     ) {
                                         Text("Rename", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 3) Fullscreen / Lightbox Image Preview Dialog
+                    previewImageFile?.let { imgFile ->
+                        Dialog(onDismissRequest = { previewImageFile = null }) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .background(Color.Black.copy(alpha = 0.94f))
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) { previewImageFile = null }
+                                    .padding(16.dp)
+                            ) {
+                                val imageUrl = if (isPhoneStorage) {
+                                    File(imgFile.path)
+                                } else {
+                                    "http://$ip:$port/api/download?path=${Uri.encode(imgFile.path)}&inline=1&password=${Uri.encode(pass)}"
+                                }
+
+                                AsyncImage(
+                                    model = imageUrl,
+                                    contentDescription = imgFile.name,
+                                    contentScale = ContentScale.Fit,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(vertical = 60.dp)
+                                )
+
+                                // Top bar with file name & close button
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .align(Alignment.TopCenter)
+                                        .padding(horizontal = 8.dp, vertical = 12.dp),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = imgFile.name,
+                                        color = Color.White,
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                    IconButton(onClick = { previewImageFile = null }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Close,
+                                            contentDescription = "Close",
+                                            tint = Color.White
+                                        )
+                                    }
+                                }
+
+                                // Bottom bar with explicit Download button
+                                if (!isPhoneStorage) {
+                                    Button(
+                                        onClick = {
+                                            downloadPcFile(imgFile)
+                                            previewImageFile = null
+                                        },
+                                        colors = ButtonDefaults.buttonColors(
+                                            containerColor = colors.scanPillBg,
+                                            contentColor = colors.scanPillContent
+                                        ),
+                                        shape = RoundedCornerShape(24.dp),
+                                        modifier = Modifier
+                                            .align(Alignment.BottomCenter)
+                                            .padding(bottom = 20.dp)
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Default.FileDownload,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(18.dp)
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text("Save to Downloads", fontWeight = FontWeight.Bold)
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // 4) Confirm Download Dialog for non-media PC files
+                    confirmDownloadFile?.let { pcFile ->
+                        Dialog(onDismissRequest = { confirmDownloadFile = null }) {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(colors.surface, shape = RoundedCornerShape(20.dp))
+                                    .border(1.dp, colors.cardBorder, RoundedCornerShape(20.dp))
+                                    .padding(20.dp)
+                            ) {
+                                Column {
+                                    Text(
+                                        text = "Download File",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 18.sp,
+                                        color = colors.textPrimary
+                                    )
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    Text(
+                                        text = "Do you want to download \"${pcFile.name}\" to your phone?",
+                                        fontSize = 14.sp,
+                                        color = colors.textSecondary
+                                    )
+                                    Spacer(modifier = Modifier.height(20.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        OutlinedButton(
+                                            onClick = { confirmDownloadFile = null },
+                                            shape = RoundedCornerShape(20.dp),
+                                            modifier = Modifier.weight(1f).height(46.dp)
+                                        ) {
+                                            Text("Cancel", color = colors.textPrimary)
+                                        }
+                                        Button(
+                                            onClick = {
+                                                val target = pcFile
+                                                confirmDownloadFile = null
+                                                downloadPcFile(target)
+                                            },
+                                            shape = RoundedCornerShape(20.dp),
+                                            colors = ButtonDefaults.buttonColors(
+                                                containerColor = colors.scanPillBg,
+                                                contentColor = colors.scanPillContent
+                                            ),
+                                            modifier = Modifier.weight(1f).height(46.dp)
+                                        ) {
+                                            Text("Download", fontWeight = FontWeight.Bold)
+                                        }
                                     }
                                 }
                             }
@@ -391,6 +567,60 @@ class FileManagerActivity : ComponentActivity() {
         )
 
         fileList = items
+    }
+
+    // ==========================================
+    // FILE CLICK ROUTING (PREVIEW vs STREAM vs DOWNLOAD)
+    // ==========================================
+
+    private fun handleFileClick(file: FileItem) {
+        val ext = file.ext.lowercase(Locale.getDefault()).removePrefix(".")
+        val imageExts = setOf("png", "jpg", "jpeg", "webp", "gif", "bmp", "svg")
+        val videoExts = setOf("mp4", "mkv", "mov", "webm", "avi", "3gp", "flv", "ts")
+        val audioExts = setOf("mp3", "wav", "flac", "ogg", "m4a", "aac", "opus")
+
+        when {
+            imageExts.contains(ext) -> {
+                previewImageFile = file
+            }
+            videoExts.contains(ext) || audioExts.contains(ext) -> {
+                val mime = if (videoExts.contains(ext)) "video/*" else "audio/*"
+                if (isPhoneStorage) {
+                    try {
+                        val uri = FileProvider.getUriForFile(
+                            this,
+                            "${packageName}.provider",
+                            File(file.path)
+                        )
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(uri, mime)
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        startActivity(intent)
+                    } catch (_: Exception) {
+                        toast("No app found to play media")
+                    }
+                } else {
+                    val streamUrl = "http://$ip:$port/api/download?path=${Uri.encode(file.path)}&inline=1&password=${Uri.encode(pass)}"
+                    try {
+                        val intent = Intent(Intent.ACTION_VIEW).apply {
+                            setDataAndType(Uri.parse(streamUrl), mime)
+                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                        }
+                        startActivity(intent)
+                    } catch (_: Exception) {
+                        toast("No app found to stream media")
+                    }
+                }
+            }
+            else -> {
+                if (isPhoneStorage) {
+                    openLocalFile(file)
+                } else {
+                    confirmDownloadFile = file
+                }
+            }
+        }
     }
 
     // ==========================================
@@ -504,7 +734,7 @@ class FileManagerActivity : ComponentActivity() {
     }
 
     // ==========================================
-    // FILE ACTIONS (DOWNLOAD / UPLOAD / PASTE)
+    // FILE ACTIONS (DOWNLOAD / UPLOAD / PASTE / BATCH)
     // ==========================================
 
     private fun downloadPcFile(file: FileItem) {
@@ -537,61 +767,105 @@ class FileManagerActivity : ComponentActivity() {
         }
     }
 
+    private fun handleBatchCopy(files: List<FileItem>) {
+        if (files.isEmpty()) return
+        clipboardList = files
+        clipboard = files.firstOrNull()
+        clipAction = "copy"
+        clipboardSource = if (isPhoneStorage) "phone" else "pc"
+        toast("Copied ${files.size} items")
+    }
+
+    private fun handleBatchCut(files: List<FileItem>) {
+        if (files.isEmpty()) return
+        clipboardList = files
+        clipboard = files.firstOrNull()
+        clipAction = "cut"
+        clipboardSource = if (isPhoneStorage) "phone" else "pc"
+        toast("Cut ${files.size} items")
+    }
+
+    private fun handleBatchDelete(files: List<FileItem>) {
+        if (files.isEmpty()) return
+        lifecycleScope.launch {
+            toast("Deleting ${files.size} item(s)...")
+            var count = 0
+            withContext(Dispatchers.IO) {
+                for (f in files) {
+                    val ok = if (isPhoneStorage) {
+                        File(f.path).delete()
+                    } else {
+                        WireFMClient.deleteFile(ip, port, pass, f.path)
+                    }
+                    if (ok) count++
+                }
+            }
+            toast("Deleted $count item(s)")
+            if (isPhoneStorage) loadPhoneFiles(currentPhoneDir) else navigateToPc(currentPcPath)
+        }
+    }
+
+    private fun handleBatchDownload(files: List<FileItem>) {
+        if (files.isEmpty()) return
+        lifecycleScope.launch {
+            toast("Downloading ${files.size} file(s)...")
+            val downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
+            var count = 0
+            withContext(Dispatchers.IO) {
+                for (f in files) {
+                    val downloaded = WireFMClient.downloadFile(ip, port, pass, f.path, downloadsDir)
+                    if (downloaded != null && downloaded.exists()) {
+                        count++
+                        MediaScannerConnection.scanFile(this@FileManagerActivity, arrayOf(downloaded.absolutePath), null, null)
+                    }
+                }
+            }
+            toast("Saved $count file(s) to Downloads")
+        }
+    }
+
     private fun handlePasteAction() {
-        val cb = clipboard ?: return
+        val itemsToPaste = if (clipboardList.isNotEmpty()) clipboardList else listOfNotNull(clipboard)
+        if (itemsToPaste.isEmpty()) return
         val currentDest = if (isPhoneStorage) currentPhoneDir.absolutePath else currentPcPath
 
         lifecycleScope.launch {
-            if (clipboardSource == "pc" && !isPhoneStorage) {
-                // PC to PC copy/move
-                val ok = withContext(Dispatchers.IO) {
-                    val destFile = if (currentDest.endsWith("/")) currentDest + cb.name else "$currentDest/${cb.name}"
-                    if (clipAction == "cut") WireFMClient.moveFile(ip, port, pass, cb.path, destFile)
-                    else WireFMClient.copyFile(ip, port, pass, cb.path, destFile)
-                }
-                if (ok) {
-                    toast("Pasted to PC")
-                    clipboard = null
-                    navigateToPc(currentPcPath)
-                } else toast("Paste failed")
-            } else if (clipboardSource == "phone" && isPhoneStorage) {
-                // Phone to Phone copy/move
-                val src = File(cb.path)
-                val dest = File(currentPhoneDir, cb.name)
-                val ok = withContext(Dispatchers.IO) {
-                    if (clipAction == "cut") src.renameTo(dest)
-                    else {
-                        src.copyTo(dest, overwrite = true)
-                        true
+            toast("Pasting ${itemsToPaste.size} item(s)...")
+            var successCount = 0
+            withContext(Dispatchers.IO) {
+                for (cb in itemsToPaste) {
+                    if (clipboardSource == "pc" && !isPhoneStorage) {
+                        // PC to PC copy/move
+                        val destFile = if (currentDest.endsWith("/")) currentDest + cb.name else "$currentDest/${cb.name}"
+                        val ok = if (clipAction == "cut") WireFMClient.moveFile(ip, port, pass, cb.path, destFile)
+                        else WireFMClient.copyFile(ip, port, pass, cb.path, destFile)
+                        if (ok) successCount++
+                    } else if (clipboardSource == "phone" && isPhoneStorage) {
+                        // Phone to Phone copy/move
+                        val src = File(cb.path)
+                        val dest = File(currentPhoneDir, cb.name)
+                        val ok = if (clipAction == "cut") src.renameTo(dest)
+                        else {
+                            src.copyTo(dest, overwrite = true)
+                            true
+                        }
+                        if (ok) successCount++
+                    } else if (clipboardSource == "phone" && !isPhoneStorage) {
+                        // Phone to PC Upload
+                        val ok = WireFMClient.uploadFile(ip, port, pass, currentPcPath, File(cb.path))
+                        if (ok) successCount++
+                    } else if (clipboardSource == "pc" && isPhoneStorage) {
+                        // PC to Phone Download
+                        val destFile = File(currentPhoneDir, cb.name)
+                        val ok = WireFMClient.downloadFileToExactPath(ip, port, pass, cb.path, destFile)
+                        if (ok) successCount++
                     }
                 }
-                if (ok) {
-                    toast("Pasted to Phone")
-                    clipboard = null
-                    loadPhoneFiles(currentPhoneDir)
-                } else toast("Paste failed")
-            } else if (clipboardSource == "phone" && !isPhoneStorage) {
-                // Phone to PC Upload
-                val ok = withContext(Dispatchers.IO) {
-                    WireFMClient.uploadFile(ip, port, pass, currentPcPath, File(cb.path))
-                }
-                if (ok) {
-                    toast("Uploaded to PC")
-                    clipboard = null
-                    navigateToPc(currentPcPath)
-                } else toast("Upload failed")
-            } else if (clipboardSource == "pc" && isPhoneStorage) {
-                // PC to Phone Download
-                val destFile = File(currentPhoneDir, cb.name)
-                val ok = withContext(Dispatchers.IO) {
-                    WireFMClient.downloadFileToExactPath(ip, port, pass, cb.path, destFile)
-                }
-                if (ok) {
-                    toast("Downloaded to Phone")
-                    clipboard = null
-                    loadPhoneFiles(currentPhoneDir)
-                } else toast("Download failed")
             }
+            toast("Pasted $successCount item(s)")
+            clipboard = null
+            clipboardList = emptyList()
+            if (isPhoneStorage) loadPhoneFiles(currentPhoneDir) else navigateToPc(currentPcPath)
         }
     }
 
@@ -650,9 +924,14 @@ class FileManagerActivity : ComponentActivity() {
 
     private fun openLocalFile(file: FileItem) {
         try {
+            val uri = FileProvider.getUriForFile(
+                this,
+                "${packageName}.provider",
+                File(file.path)
+            )
             val intent = Intent(Intent.ACTION_VIEW).apply {
-                setDataAndType(Uri.fromFile(File(file.path)), "*/*")
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                setDataAndType(uri, "*/*")
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             startActivity(intent)
         } catch (_: Exception) {
@@ -662,9 +941,15 @@ class FileManagerActivity : ComponentActivity() {
 
     private fun sharePhoneFile(file: FileItem) {
         try {
+            val uri = FileProvider.getUriForFile(
+                this,
+                "${packageName}.provider",
+                File(file.path)
+            )
             val intent = Intent(Intent.ACTION_SEND).apply {
                 type = "*/*"
-                putExtra(Intent.EXTRA_STREAM, Uri.fromFile(File(file.path)))
+                putExtra(Intent.EXTRA_STREAM, uri)
+                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             startActivity(Intent.createChooser(intent, "Share ${file.name}"))
         } catch (_: Exception) {

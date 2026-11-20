@@ -1026,7 +1026,7 @@ func main() {
 	printBanner(ip)
 
 	// Print QR in terminal
-	fmt.Println("\n  Scan QR code with WireFM app:\n")
+	fmt.Printf("\n  Scan QR code with WireFM app:\n\n")
 	q, err := qrcode.New(connectURL, qrcode.Medium)
 	if err == nil {
 		fmt.Println(q.ToSmallString(false))
@@ -1113,7 +1113,7 @@ func main() {
 
 	fmt.Printf("  ✅ WebDAV    → davs://%s:%s\n", ip, WebDAVPort)
 	fmt.Printf("  ✅ Mount on Linux: davfs2 http://%s:%s /mnt/wirefm\n\n", ip, WebDAVPort)
-	fmt.Println("  Press Ctrl+C to stop\n")
+	fmt.Println("  Press Ctrl+C to stop")
 
 	if err := http.ListenAndServe(":"+WebDAVPort, webdavMux); err != nil {
 		fmt.Println("WebDAV error:", err)
