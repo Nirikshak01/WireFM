@@ -6,8 +6,11 @@
   <a href="https://github.com/jasmin1727/WireFM/releases/latest/download/WireFM.apk">
     <img src="https://img.shields.io/badge/Download_Android_APK-WireFM_2.0-8B5CF6?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" height="42" />
   </a>
+  <a href="https://github.com/jasmin1727/WireFM/releases/latest/download/wirefm-desktop-linux-amd64">
+    <img src="https://img.shields.io/badge/🖥️_Download_Desktop_GUI-Linux_x64-2F8BF0?style=for-the-badge&logo=linux&logoColor=white" alt="Desktop GUI" height="42" />
+  </a>
   <a href="#-quick-start-pc">
-    <img src="https://img.shields.io/badge/💻_Install_on_Linux-1--Line_Curl-4ECCA3?style=for-the-badge&logo=linux&logoColor=white" alt="Linux Install" height="42" />
+    <img src="https://img.shields.io/badge/💻_Install_CLI-1--Line_Curl-4ECCA3?style=for-the-badge&logo=gnubash&logoColor=white" alt="Linux Install" height="42" />
   </a>
 </p>
 
@@ -22,13 +25,23 @@
 
 ## 📥 Direct Downloads
 
-> ### 📱 **[👉 CLICK HERE TO DOWNLOAD ANDROID APK (WireFM.apk)](https://github.com/jasmin1727/WireFM/releases/latest/download/WireFM.apk)**
-> *Install directly on your Android phone without needing Android Studio!*
+> ### 📱 **[👉 Download Android APK (WireFM.apk)](https://github.com/jasmin1727/WireFM/releases/latest/download/WireFM.apk)**
+> *Install directly on your phone with full Jetpack Compose M3 UI.*
+>
+> ### 🖥️ **[👉 Download Standalone Desktop GUI (wirefm-desktop-linux-amd64)](https://github.com/jasmin1727/WireFM/releases/latest/download/wirefm-desktop-linux-amd64)**
+> *Standalone iOS-style file manager (< 20 MB size, < 40 MB RAM, No Electron).*
 
 ---
 
 ## ⚡ WireFM 2.0 Highlights
 
+- 🖥️ **Standalone Desktop GUI File Manager**:
+  - Ultra-lightweight native Wails desktop application (< 40 MB idle RAM).
+  - Authentic iOS/macOS component aesthetic (`#0D0D11`, glassmorphism, pill badges).
+  - Instant pairing QR Scanner card on launch.
+  - Places & Devices sidebar (`Home`, `Desktop`, `Documents`, `Downloads`, `Vivo y36`).
+  - 3-column `#CCD8DA` folder grid with breadcrumbs (`root > home > jasmin`).
+  - Full OS drag-and-drop file transfer overlay.
 - 🎨 **100% Jetpack Compose & Material 3 UI**:
   - Rebuilt ground-up in Kotlin & Jetpack Compose.
   - Deep AMOLED pitch black theme (`#000000`) with smooth spring animations.

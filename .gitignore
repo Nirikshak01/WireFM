@@ -20,6 +20,7 @@ Thumbs.db
 node_modules/
 */node_modules/
 dist/
-*/dist/
+desktop/frontend/dist/*
+!desktop/frontend/dist/index.html
 .pnpm-store/
 
