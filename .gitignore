@@ -8,6 +8,7 @@
 .gradle/
 build/
 */build/
+!desktop/build/appicon.png
 *.iml
 .idea/
 local.properties
@@ -22,5 +23,6 @@ node_modules/
 dist/
 desktop/frontend/dist/*
 !desktop/frontend/dist/index.html
+!desktop/appicon.png
 .pnpm-store/
 
