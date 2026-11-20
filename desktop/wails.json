@@ -1,0 +1,20 @@
+{
+  "$schema": "https://wails.io/schemas/config.v2.json",
+  "name": "WireFM",
+  "outputfilename": "wirefm-desktop",
+  "frontend:install": "pnpm install",
+  "frontend:build": "pnpm run build",
+  "frontend:dev:watcher": "pnpm run dev",
+  "frontend:dev:serverUrl": "auto",
+  "author": {
+    "name": "Jasmin",
+    "email": "thakorjasmin503@gmail.com"
+  },
+  "info": {
+    "companyName": "WireFM",
+    "productName": "WireFM Desktop",
+    "productVersion": "2.0.0",
+    "copyright": "Copyright 2026",
+    "comments": "Ultra-lightweight wireless file manager"
+  }
+}
