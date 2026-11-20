@@ -1,5 +1,5 @@
 import React from 'react'
-import { ChevronLeft, ChevronRight, RotateCw, Search, Grid, List } from 'lucide-react'
+import { ChevronLeft, RotateCw, Search, Grid, List } from 'lucide-react'
 import { ViewMode } from '../types'
 
 interface BreadcrumbBarProps {

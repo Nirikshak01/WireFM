@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react'
-import { Download, ExternalLink, Copy, Trash2, Edit3 } from 'lucide-react'
+import { Download, ExternalLink, Copy, Trash2 } from 'lucide-react'
 import { FileEntry } from '../types'
 
 interface ContextMenuProps {

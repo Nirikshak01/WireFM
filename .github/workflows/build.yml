@@ -109,7 +109,8 @@ jobs:
         run: |
           mkdir -p dist
           cd desktop
-          ~/go/bin/wails build -platform linux/amd64 -ldflags="-s -w"
+          export PATH="$(go env GOPATH)/bin:$HOME/go/bin:$PATH"
+          wails build -platform linux/amd64 -ldflags="-s -w"
           cp build/bin/wirefm-desktop ../dist/wirefm-desktop-linux-amd64
 
       - name: Upload Desktop Artifact

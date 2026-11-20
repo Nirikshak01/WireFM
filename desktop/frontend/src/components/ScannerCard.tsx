@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Info, Copy, Check, RefreshCw } from 'lucide-react'
+import { Copy, Check, RefreshCw } from 'lucide-react'
 import { QrData } from '../types'
 
 interface ScannerCardProps {
