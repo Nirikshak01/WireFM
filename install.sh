@@ -37,21 +37,20 @@ fi
 
 # 1. Download WireFM Desktop GUI Binary & create GPU-safe wrapper
 echo "📦 Downloading WireFM Desktop GUI..."
-if ! curl -sL --fail "${RELEASE_BASE}/wirefm-desktop-linux-amd64" -o "$INSTALL_BIN/wirefm-desktop-bin"; then
+TMP_BIN="$INSTALL_BIN/wirefm-desktop-bin.tmp.$$"
+if curl -sL --fail "${RELEASE_BASE}/wirefm-desktop-linux-amd64" -o "$TMP_BIN"; then
+    chmod +x "$TMP_BIN"
+    mv -f "$TMP_BIN" "$INSTALL_BIN/wirefm-desktop-bin"
+    cp "$INSTALL_BIN/wirefm-desktop-bin" "$HOME/wirefm-desktop.tmp.$$" 2>/dev/null && mv -f "$HOME/wirefm-desktop.tmp.$$" "$HOME/wirefm-desktop" 2>/dev/null || true
+    chmod +x "$HOME/wirefm-desktop" 2>/dev/null || true
+else
     echo "⚠️  Remote download failed, checking local binary..."
+    rm -f "$TMP_BIN" 2>/dev/null || true
     if [ -f "$HOME/wirefm-desktop" ]; then
-        cp "$HOME/wirefm-desktop" "$INSTALL_BIN/wirefm-desktop-bin"
-    elif [ -f "$HOME/.local/bin/wirefm-desktop" ] && [ ! -f "$INSTALL_BIN/wirefm-desktop-bin" ]; then
-        cp "$HOME/.local/bin/wirefm-desktop" "$INSTALL_BIN/wirefm-desktop-bin"
+        cp "$HOME/wirefm-desktop" "$INSTALL_BIN/wirefm-desktop-bin.tmp" 2>/dev/null && mv -f "$INSTALL_BIN/wirefm-desktop-bin.tmp" "$INSTALL_BIN/wirefm-desktop-bin" || true
     fi
 fi
 chmod +x "$INSTALL_BIN/wirefm-desktop-bin" 2>/dev/null || true
-
-# Also sync to ~/wirefm-desktop if user runs it directly from home
-if [ -f "$INSTALL_BIN/wirefm-desktop-bin" ]; then
-    cp "$INSTALL_BIN/wirefm-desktop-bin" "$HOME/wirefm-desktop" 2>/dev/null || true
-    chmod +x "$HOME/wirefm-desktop" 2>/dev/null || true
-fi
 
 # Create executable wrapper script for wirefm-desktop
 cat > "$INSTALL_BIN/wirefm-desktop" << 'EOF'
