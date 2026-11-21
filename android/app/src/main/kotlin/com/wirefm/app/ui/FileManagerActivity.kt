@@ -540,22 +540,21 @@ class FileManagerActivity : ComponentActivity() {
             while (isActive) {
                 try {
                     val phoneRoot = Environment.getExternalStorageDirectory() ?: File("/storage/emulated/0")
-                    val filesList = if (checkStoragePermission()) {
-                        phoneRoot.listFiles()?.take(60)?.map { f ->
-                            mapOf<String, Any>(
-                                "name" to f.name,
-                                "path" to f.absolutePath,
-                                "is_dir" to f.isDirectory,
-                                "size" to if (f.isDirectory) 0L else f.length(),
-                                "ext" to if (f.isDirectory) "" else "." + f.extension.lowercase(Locale.getDefault())
-                            )
-                        } ?: emptyList()
-                    } else emptyList()
+                    val rawFiles = try { phoneRoot.listFiles() } catch (_: Exception) { null }
+                    val filesList = rawFiles?.take(60)?.map { f ->
+                        mapOf<String, Any>(
+                            "name" to f.name,
+                            "path" to f.absolutePath,
+                            "is_dir" to f.isDirectory,
+                            "size" to if (f.isDirectory) 0L else f.length(),
+                            "ext" to if (f.isDirectory) "" else "." + f.extension.lowercase(Locale.getDefault())
+                        )
+                    } ?: emptyList()
 
                     val devName = "${Build.MANUFACTURER.replaceFirstChar { it.uppercase() }} ${Build.MODEL}"
                     WireFMClient.sendPhoneHeartbeat(ip, port, pass, devName, phoneRoot.absolutePath, filesList)
                 } catch (_: Exception) {}
-                delay(12000)
+                delay(10000)
             }
         }
     }
@@ -568,6 +567,8 @@ class FileManagerActivity : ComponentActivity() {
                     val cmd = WireFMClient.pollPhoneCommand(ip, port, pass)
                     if (cmd != null && cmd.id.isNotBlank()) {
                         handlePhoneCommand(cmd)
+                    } else {
+                        delay(400)
                     }
                 } catch (_: Exception) {
                     delay(1000)
@@ -587,10 +588,9 @@ class FileManagerActivity : ComponentActivity() {
                             cmd.path
                         }
                         val dir = File(targetPath)
-                        if (!checkStoragePermission()) {
-                            WireFMClient.respondPhoneError(ip, port, pass, cmd.id, "Storage permission not granted")
-                        } else if (dir.exists() && dir.isDirectory) {
-                            val files = dir.listFiles()?.map { f ->
+                        val rawFiles = try { dir.listFiles() } catch (_: Exception) { null }
+                        if (rawFiles != null) {
+                            val files = rawFiles.map { f ->
                                 mapOf<String, Any>(
                                     "name" to f.name,
                                     "path" to f.absolutePath,
@@ -598,8 +598,10 @@ class FileManagerActivity : ComponentActivity() {
                                     "size" to if (f.isDirectory) 0L else f.length(),
                                     "ext" to if (f.isDirectory) "" else "." + f.extension.lowercase(Locale.getDefault())
                                 )
-                            }?.sortedWith(compareByDescending<Map<String, Any>> { it["is_dir"] as Boolean }.thenBy { (it["name"] as String).lowercase(Locale.getDefault()) }) ?: emptyList()
+                            }.sortedWith(compareByDescending<Map<String, Any>> { it["is_dir"] as Boolean }.thenBy { (it["name"] as String).lowercase(Locale.getDefault()) })
                             WireFMClient.respondPhoneCommand(ip, port, pass, cmd.id, true, files)
+                        } else if (!checkStoragePermission()) {
+                            WireFMClient.respondPhoneError(ip, port, pass, cmd.id, "Storage permission not granted")
                         } else {
                             WireFMClient.respondPhoneError(ip, port, pass, cmd.id, "Folder does not exist")
                         }

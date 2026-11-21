@@ -200,7 +200,8 @@ object WireFMClient {
             val payload = mapOf(
                 "id" to id,
                 "success" to success,
-                "files" to files
+                "files" to files,
+                "data" to files
             )
             val body = gson.toJson(payload).toRequestBody("application/json".toMediaType())
             val req = Request.Builder()

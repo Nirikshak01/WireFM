@@ -333,6 +333,11 @@ func (a *App) ListLocalDirectory(reqPath string) ([]FileEntry, error) {
 
 // sendPhoneCommand sends a command to the connected Android phone and waits for the response
 func (a *App) sendPhoneCommand(action, path, destPath string, timeout time.Duration) (PhoneCommandResponse, error) {
+	return a.sendPhoneCommandWithToken(action, path, destPath, "", timeout)
+}
+
+// sendPhoneCommandWithToken sends a command with a tracking token for file streaming
+func (a *App) sendPhoneCommandWithToken(action, path, destPath, token string, timeout time.Duration) (PhoneCommandResponse, error) {
 	cmdID := fmt.Sprintf("cmd_%d_%d", time.Now().UnixNano(), rand.Intn(10000))
 	respChan := make(chan PhoneCommandResponse, 1)
 
@@ -351,6 +356,7 @@ func (a *App) sendPhoneCommand(action, path, destPath string, timeout time.Durat
 		Action:    action,
 		Path:      path,
 		DestPath:  destPath,
+		Token:     token,
 		Timestamp: time.Now().Unix(),
 	}
 
@@ -366,6 +372,35 @@ func (a *App) sendPhoneCommand(action, path, destPath string, timeout time.Durat
 	}
 }
 
+// fetchPhoneFile requests a file stream from phone and waits until received
+func (a *App) fetchPhoneFile(remotePath string, timeout time.Duration) (string, error) {
+	token := fmt.Sprintf("stream_%d_%d", time.Now().UnixNano(), rand.Intn(10000))
+	streamChan := make(chan string, 1)
+
+	phoneStreamMu.Lock()
+	phoneStreamUploads[token] = streamChan
+	phoneStreamMu.Unlock()
+
+	defer func() {
+		phoneStreamMu.Lock()
+		delete(phoneStreamUploads, token)
+		phoneStreamMu.Unlock()
+	}()
+
+	// Ask phone worker to read and stream file
+	_, err := a.sendPhoneCommandWithToken("read", remotePath, "", token, timeout)
+	if err != nil {
+		return "", err
+	}
+
+	select {
+	case tmpPath := <-streamChan:
+		return tmpPath, nil
+	case <-time.After(timeout):
+		return "", fmt.Errorf("timeout waiting for phone file stream")
+	}
+}
+
 // ListRemoteDirectory returns files for remote phone (queries live device or returns cached items)
 func (a *App) ListRemoteDirectory(reqPath string) ([]FileEntry, error) {
 	results := make([]FileEntry, 0)
@@ -376,14 +411,21 @@ func (a *App) ListRemoteDirectory(reqPath string) ([]FileEntry, error) {
 	}
 
 	// 1. Query the live connected phone for this directory
-	resp, err := a.sendPhoneCommand("list", targetPath, "", 3*time.Second)
-	if err == nil && resp.Success && resp.Data != nil {
-		if dataBytes, err := json.Marshal(resp.Data); err == nil {
-			var phoneFiles []FileEntry
-			if err := json.Unmarshal(dataBytes, &phoneFiles); err == nil {
-				return phoneFiles, nil
+	resp, err := a.sendPhoneCommand("list", targetPath, "", 4*time.Second)
+	if err == nil && resp.Success {
+		if len(resp.Files) > 0 {
+			return resp.Files, nil
+		}
+		if resp.Data != nil {
+			if dataBytes, err := json.Marshal(resp.Data); err == nil {
+				var phoneFiles []FileEntry
+				if err := json.Unmarshal(dataBytes, &phoneFiles); err == nil && len(phoneFiles) > 0 {
+					return phoneFiles, nil
+				}
 			}
 		}
+		// If phone returned success but empty list, return empty directory
+		return results, nil
 	}
 
 	// 2. Fallback to initial heartbeat files if at root
@@ -420,7 +462,38 @@ func (a *App) UploadFiles(targetDir string, filePaths []string) error {
 
 // DownloadFile downloads or copies a file to target directory
 func (a *App) DownloadFile(remotePath, localTargetDir string) error {
-	return nil
+	home, _ := os.UserHomeDir()
+	targetDir := localTargetDir
+	if targetDir == "" || targetDir == "downloads" {
+		targetDir = filepath.Join(home, "Downloads")
+	} else {
+		targetDir = a.resolvePath(targetDir)
+	}
+	os.MkdirAll(targetDir, 0755)
+
+	if strings.HasPrefix(remotePath, "/storage") {
+		tmpPath, err := a.fetchPhoneFile(remotePath, 20*time.Second)
+		if err != nil {
+			return err
+		}
+		defer os.Remove(tmpPath)
+
+		destPath := filepath.Join(targetDir, filepath.Base(remotePath))
+		data, err := os.ReadFile(tmpPath)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(destPath, data, 0644)
+	}
+
+	// Local file copy
+	resolvedSrc := a.resolvePath(remotePath)
+	destPath := filepath.Join(targetDir, filepath.Base(resolvedSrc))
+	data, err := os.ReadFile(resolvedSrc)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(destPath, data, 0644)
 }
 
 // OpenPath opens the file or directory using the OS default application
@@ -432,6 +505,18 @@ func (a *App) OpenPath(path string) error {
 
 // RenameFile renames or moves a file to a new name in same directory
 func (a *App) RenameFile(oldPath, newName string) error {
+	if strings.HasPrefix(oldPath, "/storage") {
+		dir := filepath.Dir(oldPath)
+		newPath := filepath.Join(dir, newName)
+		resp, err := a.sendPhoneCommand("rename", oldPath, newPath, 5*time.Second)
+		if err != nil {
+			return err
+		}
+		if !resp.Success {
+			return fmt.Errorf("failed to rename on phone: %s", resp.Error)
+		}
+		return nil
+	}
 	resolvedOld := a.resolvePath(oldPath)
 	dir := filepath.Dir(resolvedOld)
 	newPath := filepath.Join(dir, newName)
@@ -440,12 +525,33 @@ func (a *App) RenameFile(oldPath, newName string) error {
 
 // DeleteFile deletes a file or directory
 func (a *App) DeleteFile(path string) error {
+	if strings.HasPrefix(path, "/storage") {
+		resp, err := a.sendPhoneCommand("delete", path, "", 5*time.Second)
+		if err != nil {
+			return err
+		}
+		if !resp.Success {
+			return fmt.Errorf("failed to delete on phone: %s", resp.Error)
+		}
+		return nil
+	}
 	resolved := a.resolvePath(path)
 	return os.RemoveAll(resolved)
 }
 
 // CreateFolder creates a new directory
 func (a *App) CreateFolder(parentPath, folderName string) error {
+	if strings.HasPrefix(parentPath, "/storage") {
+		newDir := filepath.Join(parentPath, folderName)
+		resp, err := a.sendPhoneCommand("mkdir", newDir, "", 5*time.Second)
+		if err != nil {
+			return err
+		}
+		if !resp.Success {
+			return fmt.Errorf("failed to create directory on phone: %s", resp.Error)
+		}
+		return nil
+	}
 	resolvedParent := a.resolvePath(parentPath)
 	newDir := filepath.Join(resolvedParent, folderName)
 	return os.MkdirAll(newDir, 0755)
@@ -482,23 +588,36 @@ func (a *App) OpenWith(path, appName string) error {
 
 // GetFileContentBase64 reads an image/media file and returns a base64 data URL for in-app preview
 func (a *App) GetFileContentBase64(path string) (string, error) {
-	resolved := a.resolvePath(path)
-	info, err := os.Stat(resolved)
+	var targetFile string
+	isRemote := strings.HasPrefix(path, "/storage")
+
+	if isRemote {
+		tmpPath, err := a.fetchPhoneFile(path, 15*time.Second)
+		if err != nil {
+			return "", err
+		}
+		defer os.Remove(tmpPath)
+		targetFile = tmpPath
+	} else {
+		targetFile = a.resolvePath(path)
+	}
+
+	info, err := os.Stat(targetFile)
 	if err != nil {
 		return "", err
 	}
 
-	// Limit in-app base64 preview to files under 20MB
-	if info.Size() > 20*1024*1024 {
+	// Limit in-app base64 preview to files under 25MB
+	if info.Size() > 25*1024*1024 {
 		return "", fmt.Errorf("file too large for direct preview")
 	}
 
-	data, err := os.ReadFile(resolved)
+	data, err := os.ReadFile(targetFile)
 	if err != nil {
 		return "", err
 	}
 
-	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(resolved), "."))
+	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(path), "."))
 	mimeType := "application/octet-stream"
 	switch ext {
 	case "png":

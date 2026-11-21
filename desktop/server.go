@@ -40,19 +40,22 @@ type PhoneWorkerCommand struct {
 }
 
 type PhoneCommandResponse struct {
-	ID      string `json:"id"`
-	Success bool   `json:"success"`
-	Error   string `json:"error,omitempty"`
-	Data    any    `json:"data,omitempty"`
+	ID      string        `json:"id"`
+	Success bool          `json:"success"`
+	Error   string        `json:"error,omitempty"`
+	Data    any           `json:"data,omitempty"`
+	Files   []FileEntry   `json:"files,omitempty"`
 }
 
 var (
-	phoneCmdQueue   = make([]PhoneWorkerCommand, 0)
-	phoneCmdMu      sync.Mutex
-	phoneCmdResults = make(map[string]PhoneCommandResponse)
-	phoneResMu      sync.Mutex
-	phonePendingReq = make(map[string]chan PhoneCommandResponse)
-	phoneReqMu      sync.Mutex
+	phoneCmdQueue      = make([]PhoneWorkerCommand, 0)
+	phoneCmdMu         sync.Mutex
+	phoneCmdResults    = make(map[string]PhoneCommandResponse)
+	phoneResMu         sync.Mutex
+	phonePendingReq    = make(map[string]chan PhoneCommandResponse)
+	phoneReqMu         sync.Mutex
+	phoneStreamUploads = make(map[string]chan string)
+	phoneStreamMu      sync.Mutex
 )
 
 // startEmbeddedServer launches the WireFM HTTP & WebDAV core server in background
@@ -332,6 +335,35 @@ func (a *App) startEmbeddedServer() {
 
 		w.Header().Set("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{"status": "received"})
+	}))
+
+	mux.HandleFunc("/api/phone/stream_upload", auth(func(w http.ResponseWriter, r *http.Request) {
+		token := r.URL.Query().Get("token")
+		name := r.URL.Query().Get("name")
+		if name == "" {
+			name = "remote_file"
+		}
+
+		tmpFile, err := os.CreateTemp("", "wirefm_stream_*_"+filepath.Base(name))
+		if err != nil {
+			http.Error(w, "Failed to create temp file", http.StatusInternalServerError)
+			return
+		}
+		defer tmpFile.Close()
+
+		if _, err := io.Copy(tmpFile, r.Body); err != nil {
+			http.Error(w, "Failed to write body", http.StatusInternalServerError)
+			return
+		}
+
+		phoneStreamMu.Lock()
+		if ch, ok := phoneStreamUploads[token]; ok {
+			ch <- tmpFile.Name()
+		}
+		phoneStreamMu.Unlock()
+
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 	}))
 
 	// 4. WebDAV server (for native OS file manager mounting)
