@@ -6,6 +6,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -70,7 +71,7 @@ fun FileItemGridCard(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(18.dp))
             .combinedClickable(
                 onClick = onClick,
                 onLongClick = onLongClick
@@ -81,10 +82,10 @@ fun FileItemGridCard(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(76.dp)
-                .clip(RoundedCornerShape(16.dp))
+                .aspectRatio(1.0f)
+                .clip(RoundedCornerShape(18.dp))
                 .then(
-                    if (isSelected) Modifier.border(2.5.dp, selectionBlue, RoundedCornerShape(16.dp))
+                    if (isSelected) Modifier.border(2.5.dp, selectionBlue, RoundedCornerShape(18.dp))
                     else Modifier
                 ),
             contentAlignment = Alignment.Center
@@ -92,12 +93,12 @@ fun FileItemGridCard(
             if (file.isDir) {
                 // Folder Shaped Card (#CCD8DA)
                 val folderCardColor = colors.folderCard
-                Canvas(modifier = Modifier.fillMaxSize()) {
+                Canvas(modifier = Modifier.fillMaxSize().padding(2.dp)) {
                     val w = size.width
                     val h = size.height
                     val r = 16.dp.toPx()
-                    val tabW = w * 0.46f
-                    val tabH = h * 0.18f
+                    val tabW = w * 0.44f
+                    val tabH = h * 0.16f
 
                     val folderPath = Path().apply {
                         moveTo(r, 0f)
@@ -122,6 +123,8 @@ fun FileItemGridCard(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
+                        .padding(2.dp)
+                        .clip(RoundedCornerShape(18.dp))
                         .background(colors.folderCard),
                     contentAlignment = Alignment.Center
                 ) {
@@ -129,7 +132,7 @@ fun FileItemGridCard(
                         imageVector = icon,
                         contentDescription = null,
                         tint = colors.folderCardContent,
-                        modifier = Modifier.size(34.dp)
+                        modifier = Modifier.size(38.dp)
                     )
                 }
             }

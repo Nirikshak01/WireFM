@@ -107,7 +107,7 @@ fun SettingsScreen(
             ) { isDark ->
                 Image(
                     painter = painterResource(
-                        id = if (isDark) R.drawable.wirefm_tile_white else R.drawable.wirefm_tile_dark
+                        id = if (isDark) R.drawable.ic_wirefm_tile_white else R.drawable.ic_wirefm_tile_dark
                     ),
                     contentDescription = "WireFM Logo Tile",
                     modifier = Modifier

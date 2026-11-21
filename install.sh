@@ -30,14 +30,29 @@ PIXMAPS_DIR="$HOME/.local/share/pixmaps"
 
 mkdir -p "$INSTALL_BIN" "$APP_DIR" "$ICON_DIR" "$ICON_DIR_SCALABLE" "$PIXMAPS_DIR"
 
-# 1. Download WireFM Desktop GUI
+# 1. Download WireFM Desktop GUI Binary & create GPU-safe wrapper
 echo "📦 Downloading WireFM Desktop GUI..."
-if ! curl -sL --fail "${RELEASE_BASE}/wirefm-desktop-linux-amd64" -o "$INSTALL_BIN/wirefm-desktop"; then
-    echo "⚠️  Remote download failed, checking local copy..."
+if ! curl -sL --fail "${RELEASE_BASE}/wirefm-desktop-linux-amd64" -o "$INSTALL_BIN/wirefm-desktop-bin"; then
+    echo "⚠️  Remote download failed, checking local binary..."
     if [ -f "$HOME/wirefm-desktop" ]; then
-        cp "$HOME/wirefm-desktop" "$INSTALL_BIN/wirefm-desktop"
+        cp "$HOME/wirefm-desktop" "$INSTALL_BIN/wirefm-desktop-bin"
+    elif [ -f "$HOME/.local/bin/wirefm-desktop" ] && [ ! -f "$INSTALL_BIN/wirefm-desktop-bin" ]; then
+        cp "$HOME/.local/bin/wirefm-desktop" "$INSTALL_BIN/wirefm-desktop-bin"
     fi
 fi
+chmod +x "$INSTALL_BIN/wirefm-desktop-bin" 2>/dev/null || true
+
+# Create executable wrapper script for wirefm-desktop
+cat > "$INSTALL_BIN/wirefm-desktop" << 'EOF'
+#!/usr/bin/env bash
+export WEBKIT_DISABLE_DMABUF_RENDERER=1
+export WEBKIT_DISABLE_COMPOSITING_MODE=1
+BIN_PATH="$HOME/.local/bin/wirefm-desktop-bin"
+if [ ! -f "$BIN_PATH" ]; then
+    BIN_PATH="$HOME/wirefm-desktop"
+fi
+exec "$BIN_PATH" "$@"
+EOF
 chmod +x "$INSTALL_BIN/wirefm-desktop" 2>/dev/null || true
 
 # 2. Download WireFM CLI Server
@@ -64,7 +79,7 @@ Type=Application
 Name=WireFM
 GenericName=Wireless File Manager
 Comment=Ultra-fast wireless file sharing and desktop manager
-Exec=env WEBKIT_DISABLE_DMABUF_RENDERER=1 WEBKIT_DISABLE_COMPOSITING_MODE=1 JSC_SIGNAL_FOR_GC=SIGUSR2 wirefm-desktop %U
+Exec=env WEBKIT_DISABLE_DMABUF_RENDERER=1 WEBKIT_DISABLE_COMPOSITING_MODE=1 wirefm-desktop %U
 Icon=wirefm
 Terminal=false
 Categories=Utility;FileManager;Network;FileTransfer;

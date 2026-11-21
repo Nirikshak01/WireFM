@@ -11,15 +11,12 @@ import (
 )
 
 func init() {
-	// Fix for WebKitGTK DMA-BUF renderer black screen bug on Arch Linux / Wayland / Hyprland
+	// Fix for WebKitGTK DMA-BUF renderer black screen bug on Intel Haswell / Arch / Wayland / Hyprland
 	if os.Getenv("WEBKIT_DISABLE_DMABUF_RENDERER") == "" {
 		os.Setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
 	}
 	if os.Getenv("WEBKIT_DISABLE_COMPOSITING_MODE") == "" {
 		os.Setenv("WEBKIT_DISABLE_COMPOSITING_MODE", "1")
-	}
-	if os.Getenv("JSC_SIGNAL_FOR_GC") == "" {
-		os.Setenv("JSC_SIGNAL_FOR_GC", "SIGUSR2")
 	}
 }
 

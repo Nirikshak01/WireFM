@@ -61,6 +61,7 @@ import coil.compose.AsyncImage
 import com.wirefm.app.model.FileItem
 import com.wirefm.app.model.PhoneCommand
 import com.wirefm.app.network.WireFMClient
+import com.wirefm.app.ui.components.FullScreenMediaViewer
 import com.wirefm.app.ui.screens.FileManagerScreen
 import com.wirefm.app.ui.theme.WireFMTheme
 import kotlinx.coroutines.Dispatchers
@@ -103,7 +104,7 @@ class FileManagerActivity : ComponentActivity() {
     private var renameText by mutableStateOf("")
 
     // Media preview & Download confirmation states
-    private var previewImageFile by mutableStateOf<FileItem?>(null)
+    private var previewMediaFile by mutableStateOf<FileItem?>(null)
     private var confirmDownloadFile by mutableStateOf<FileItem?>(null)
 
     private var heartbeatJob: Job? = null
@@ -361,88 +362,24 @@ class FileManagerActivity : ComponentActivity() {
                         }
                     }
 
-                    // 3) Fullscreen / Lightbox Image Preview Dialog
-                    previewImageFile?.let { imgFile ->
-                        Dialog(onDismissRequest = { previewImageFile = null }) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .background(Color.Black.copy(alpha = 0.94f))
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null
-                                    ) { previewImageFile = null }
-                                    .padding(16.dp)
-                            ) {
-                                val imageUrl = if (isPhoneStorage) {
-                                    File(imgFile.path)
+                    // 3) Fullscreen Media Viewer (Images & Videos)
+                    previewMediaFile?.let { mediaFile ->
+                        FullScreenMediaViewer(
+                            file = mediaFile,
+                            isPhoneStorage = isPhoneStorage,
+                            ip = ip,
+                            port = port,
+                            pass = pass,
+                            onClose = { previewMediaFile = null },
+                            onDownload = { targetFile ->
+                                if (isPhoneStorage) {
+                                    toast("File is already stored on this phone")
                                 } else {
-                                    "http://$ip:$port/api/download?path=${Uri.encode(imgFile.path)}&inline=1&password=${Uri.encode(pass)}"
-                                }
-
-                                AsyncImage(
-                                    model = imageUrl,
-                                    contentDescription = imgFile.name,
-                                    contentScale = ContentScale.Fit,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .padding(vertical = 60.dp)
-                                )
-
-                                // Top bar with file name & close button
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .align(Alignment.TopCenter)
-                                        .padding(horizontal = 8.dp, vertical = 12.dp),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text(
-                                        text = imgFile.name,
-                                        color = Color.White,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                    IconButton(onClick = { previewImageFile = null }) {
-                                        Icon(
-                                            imageVector = Icons.Default.Close,
-                                            contentDescription = "Close",
-                                            tint = Color.White
-                                        )
-                                    }
-                                }
-
-                                // Bottom bar with explicit Download button
-                                if (!isPhoneStorage) {
-                                    Button(
-                                        onClick = {
-                                            downloadPcFile(imgFile)
-                                            previewImageFile = null
-                                        },
-                                        colors = ButtonDefaults.buttonColors(
-                                            containerColor = colors.scanPillBg,
-                                            contentColor = colors.scanPillContent
-                                        ),
-                                        shape = RoundedCornerShape(24.dp),
-                                        modifier = Modifier
-                                            .align(Alignment.BottomCenter)
-                                            .padding(bottom = 20.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.FileDownload,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(18.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(8.dp))
-                                        Text("Save to Downloads", fontWeight = FontWeight.Bold)
-                                    }
+                                    downloadPcFile(targetFile)
+                                    previewMediaFile = null
                                 }
                             }
-                        }
+                        )
                     }
 
                     // 4) Confirm Download Dialog for non-media PC files
@@ -580,38 +517,8 @@ class FileManagerActivity : ComponentActivity() {
         val audioExts = setOf("mp3", "wav", "flac", "ogg", "m4a", "aac", "opus")
 
         when {
-            imageExts.contains(ext) -> {
-                previewImageFile = file
-            }
-            videoExts.contains(ext) || audioExts.contains(ext) -> {
-                val mime = if (videoExts.contains(ext)) "video/*" else "audio/*"
-                if (isPhoneStorage) {
-                    try {
-                        val uri = FileProvider.getUriForFile(
-                            this,
-                            "${packageName}.provider",
-                            File(file.path)
-                        )
-                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                            setDataAndType(uri, mime)
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        startActivity(intent)
-                    } catch (_: Exception) {
-                        toast("No app found to play media")
-                    }
-                } else {
-                    val streamUrl = "http://$ip:$port/api/download?path=${Uri.encode(file.path)}&inline=1&password=${Uri.encode(pass)}"
-                    try {
-                        val intent = Intent(Intent.ACTION_VIEW).apply {
-                            setDataAndType(Uri.parse(streamUrl), mime)
-                            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                        }
-                        startActivity(intent)
-                    } catch (_: Exception) {
-                        toast("No app found to stream media")
-                    }
-                }
+            imageExts.contains(ext) || videoExts.contains(ext) || audioExts.contains(ext) -> {
+                previewMediaFile = file
             }
             else -> {
                 if (isPhoneStorage) {
