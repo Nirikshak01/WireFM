@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"math/rand"
 	"net"
@@ -330,24 +331,81 @@ func (a *App) ListLocalDirectory(reqPath string) ([]FileEntry, error) {
 	return results, nil
 }
 
-// ListRemoteDirectory returns files for remote phone (or fallback demo items if connecting)
+// sendPhoneCommand sends a command to the connected Android phone and waits for the response
+func (a *App) sendPhoneCommand(action, path, destPath string, timeout time.Duration) (PhoneCommandResponse, error) {
+	cmdID := fmt.Sprintf("cmd_%d_%d", time.Now().UnixNano(), rand.Intn(10000))
+	respChan := make(chan PhoneCommandResponse, 1)
+
+	phoneReqMu.Lock()
+	phonePendingReq[cmdID] = respChan
+	phoneReqMu.Unlock()
+
+	defer func() {
+		phoneReqMu.Lock()
+		delete(phonePendingReq, cmdID)
+		phoneReqMu.Unlock()
+	}()
+
+	cmd := PhoneWorkerCommand{
+		ID:        cmdID,
+		Action:    action,
+		Path:      path,
+		DestPath:  destPath,
+		Timestamp: time.Now().Unix(),
+	}
+
+	phoneCmdMu.Lock()
+	phoneCmdQueue = append(phoneCmdQueue, cmd)
+	phoneCmdMu.Unlock()
+
+	select {
+	case resp := <-respChan:
+		return resp, nil
+	case <-time.After(timeout):
+		return PhoneCommandResponse{}, fmt.Errorf("timeout waiting for phone response")
+	}
+}
+
+// ListRemoteDirectory returns files for remote phone (queries live device or returns cached items)
 func (a *App) ListRemoteDirectory(reqPath string) ([]FileEntry, error) {
+	results := make([]FileEntry, 0)
+
+	targetPath := reqPath
+	if targetPath == "" || targetPath == "~" || targetPath == "device" {
+		targetPath = "/storage/emulated/0"
+	}
+
+	// 1. Query the live connected phone for this directory
+	resp, err := a.sendPhoneCommand("list", targetPath, "", 3*time.Second)
+	if err == nil && resp.Success && resp.Data != nil {
+		if dataBytes, err := json.Marshal(resp.Data); err == nil {
+			var phoneFiles []FileEntry
+			if err := json.Unmarshal(dataBytes, &phoneFiles); err == nil {
+				return phoneFiles, nil
+			}
+		}
+	}
+
+	// 2. Fallback to initial heartbeat files if at root
 	a.mu.Lock()
 	defer a.mu.Unlock()
-
-	if len(a.connectedFiles) > 0 {
+	if (targetPath == "/storage/emulated/0" || targetPath == "/" || targetPath == "") && len(a.connectedFiles) > 0 {
 		return a.connectedFiles, nil
 	}
 
-	// Default standard storage folders seen on Android
-	return []FileEntry{
-		{Name: "DCIM", Path: "/storage/emulated/0/DCIM", IsDir: true, Ext: ""},
-		{Name: "Download", Path: "/storage/emulated/0/Download", IsDir: true, Ext: ""},
-		{Name: "Pictures", Path: "/storage/emulated/0/Pictures", IsDir: true, Ext: ""},
-		{Name: "Documents", Path: "/storage/emulated/0/Documents", IsDir: true, Ext: ""},
-		{Name: "Music", Path: "/storage/emulated/0/Music", IsDir: true, Ext: ""},
-		{Name: "Movies", Path: "/storage/emulated/0/Movies", IsDir: true, Ext: ""},
-	}, nil
+	// 3. Fallback standard Android folders if at root
+	if targetPath == "/storage/emulated/0" || targetPath == "/" || targetPath == "" {
+		return []FileEntry{
+			{Name: "DCIM", Path: "/storage/emulated/0/DCIM", IsDir: true, Ext: ""},
+			{Name: "Download", Path: "/storage/emulated/0/Download", IsDir: true, Ext: ""},
+			{Name: "Pictures", Path: "/storage/emulated/0/Pictures", IsDir: true, Ext: ""},
+			{Name: "Documents", Path: "/storage/emulated/0/Documents", IsDir: true, Ext: ""},
+			{Name: "Music", Path: "/storage/emulated/0/Music", IsDir: true, Ext: ""},
+			{Name: "Movies", Path: "/storage/emulated/0/Movies", IsDir: true, Ext: ""},
+		}, nil
+	}
+
+	return results, nil
 }
 
 // UploadFiles simulates or streams files to phone target directory

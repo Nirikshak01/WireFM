@@ -30,6 +30,9 @@ type ServerFileInfo struct {
 type PhoneWorkerCommand struct {
 	ID        string `json:"id"`
 	Action    string `json:"action"`
+	Path      string `json:"path,omitempty"`
+	DestPath  string `json:"dest_path,omitempty"`
+	Token     string `json:"token,omitempty"`
 	Source    string `json:"source,omitempty"`
 	Target    string `json:"target,omitempty"`
 	Name      string `json:"name,omitempty"`
@@ -306,9 +309,9 @@ func (a *App) startEmbeddedServer() {
 		if len(phoneCmdQueue) > 0 {
 			cmd := phoneCmdQueue[0]
 			phoneCmdQueue = phoneCmdQueue[1:]
-			json.NewEncoder(w).Encode(map[string]interface{}{"command": cmd})
+			json.NewEncoder(w).Encode(cmd)
 		} else {
-			json.NewEncoder(w).Encode(map[string]interface{}{"command": nil})
+			json.NewEncoder(w).Encode(map[string]string{"id": ""})
 		}
 	}))
 

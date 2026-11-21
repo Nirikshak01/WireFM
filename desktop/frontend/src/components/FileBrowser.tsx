@@ -160,17 +160,38 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
 
   const handleItemClick = (e: React.MouseEvent, file: FileEntry) => {
     e.stopPropagation()
-    const newSelected = new Set(selectedPaths)
+
+    // Multi-selection if Ctrl, Shift, or Command is held
     if (e.ctrlKey || e.metaKey || e.shiftKey) {
+      const newSelected = new Set(selectedPaths)
       if (newSelected.has(file.path)) {
         newSelected.delete(file.path)
       } else {
         newSelected.add(file.path)
       }
-    } else {
-      newSelected.clear()
-      newSelected.add(file.path)
+      onSelectionChange(newSelected)
+      return
     }
+
+    // 1-Click to enter folder per user's explicit request
+    if (file.is_dir) {
+      onSelectionChange(new Set())
+      onOpenFolder(file)
+      return
+    }
+
+    // 1-Click to preview media files (images, videos, music)
+    const isMedia = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'mp4', 'webm', 'mp3', 'wav', 'flac'].includes(
+      file.ext.toLowerCase()
+    )
+    if (isMedia) {
+      onPreviewMedia(file)
+      return
+    }
+
+    // Normal file click -> select
+    const newSelected = new Set<string>()
+    newSelected.add(file.path)
     onSelectionChange(newSelected)
   }
 
@@ -257,6 +278,11 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                 onDoubleClick={() => handleItemDoubleClick(file)}
                 onContextMenu={(e) => {
                   e.stopPropagation()
+                  if (!selectedPaths.has(file.path)) {
+                    const s = new Set<string>()
+                    s.add(file.path)
+                    onSelectionChange(s)
+                  }
                   onContextMenu(e, file)
                 }}
                 className={`file-card-item flex items-center justify-between px-4 py-2.5 rounded-xl cursor-pointer transition-colors group ${
@@ -303,6 +329,11 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
                 onDoubleClick={() => handleItemDoubleClick(file)}
                 onContextMenu={(e) => {
                   e.stopPropagation()
+                  if (!selectedPaths.has(file.path)) {
+                    const s = new Set<string>()
+                    s.add(file.path)
+                    onSelectionChange(s)
+                  }
                   onContextMenu(e, file)
                 }}
                 className="file-card-item relative flex flex-col items-center group cursor-pointer"
