@@ -1,16 +1,16 @@
 <p align="center">
-  <img src="Assets/wirefm-logo-banner-black.svg" alt="WireFM" width="480" />
+  <img src="https://raw.githubusercontent.com/Nirikshak01/WireFM/main/Assets/wirefm-logo-banner-black.svg" alt="WireFM" width="480" />
 </p>
 
 <p align="center">
-  <a href="https://github.com/jasmin1727/WireFM/releases/latest/download/WireFM.apk">
+  <a href="https://github.com/Nirikshak01/WireFM/releases/latest/download/WireFM.apk">
     <img src="https://img.shields.io/badge/Download_Android_APK-WireFM_2.0-8B5CF6?style=for-the-badge&logo=android&logoColor=white" alt="Download APK" height="42" />
   </a>
-  <a href="https://github.com/jasmin1727/WireFM/releases/latest/download/wirefm-desktop-linux-amd64">
+  <a href="https://github.com/Nirikshak01/WireFM/releases/latest/download/wirefm-desktop-linux-amd64">
     <img src="https://img.shields.io/badge/🖥️_Download_Desktop_GUI-Linux_x64-2F8BF0?style=for-the-badge&logo=linux&logoColor=white" alt="Desktop GUI" height="42" />
   </a>
   <a href="#-quick-start-pc">
-    <img src="https://img.shields.io/badge/💻_Install_CLI-1--Line_Curl-4ECCA3?style=for-the-badge&logo=gnubash&logoColor=white" alt="Linux Install" height="42" />
+    <img src="https://img.shields.io/badge/🚀_Install_Desktop-1--Line_Curl-4ECCA3?style=for-the-badge&logo=gnubash&logoColor=white" alt="Linux Install" height="42" />
   </a>
 </p>
 
@@ -25,10 +25,10 @@
 
 ## 📥 Direct Downloads
 
-> ### 📱 **[👉 Download Android APK (WireFM.apk)](https://github.com/jasmin1727/WireFM/releases/latest/download/WireFM.apk)**
+> ### 📱 **[👉 Download Android APK (WireFM.apk)](https://github.com/Nirikshak01/WireFM/releases/latest/download/WireFM.apk)**
 > *Install directly on your phone with full Jetpack Compose M3 UI.*
 >
-> ### 🖥️ **[👉 Download Standalone Desktop GUI (wirefm-desktop-linux-amd64)](https://github.com/jasmin1727/WireFM/releases/latest/download/wirefm-desktop-linux-amd64)**
+> ### 🖥️ **[👉 Download Standalone Desktop GUI (wirefm-desktop-linux-amd64)](https://github.com/Nirikshak01/WireFM/releases/latest/download/wirefm-desktop-linux-amd64)**
 > *Standalone iOS-style file manager (< 20 MB size, < 40 MB RAM, No Electron).*
 
 ---
@@ -79,25 +79,25 @@
 ```bash
 curl -sSL https://raw.githubusercontent.com/Nirikshak01/WireFM/main/install.sh | bash
 ```
-*This installs both **WireFM Desktop GUI** (with desktop entry & logo in your Application Menu) and the **WireFM CLI Server**!*
+*This installs **WireFM Desktop GUI** with its desktop entry & official icon in your Application Menu!*
 
 ### Run WireFM:
 - **From Application Menu (Rofi, Wofi, GNOME, KDE, Hyprland)**: Click **WireFM** with its official logo!
-- **Or Desktop GUI via terminal**: `wirefm-desktop`
-- **Or CLI Server via terminal**: `wirefm` *(Or share a custom directory: `wirefm /path/to/folder`)*
+- **Or via terminal**: `wirefm-desktop`
 
-Terminal will show:
-1. Local IP & WebDAV endpoints.
-2. An ASCII QR Code.
-3. Scan with the **WireFM Android App**.
+The desktop app will open immediately:
+1. Displays the pairing screen with a **Generate QR** button.
+2. Tap **Generate QR** to reveal your local Wi-Fi pairing QR code & 6-digit PIN.
+3. Automatically hosts the background wireless server (no separate CLI required).
+4. Scan with the **WireFM Android App** to pair instantly.
  
 ---
 
 ## 📱 WireFM Mobile App (Android)
 
-1. Download [`WireFM.apk`](https://github.com/jasmin1727/WireFM/releases/latest/download/WireFM.apk) onto your phone and install.
+1. Download [`WireFM.apk`](https://github.com/Nirikshak01/WireFM/releases/latest/download/WireFM.apk) onto your phone and install.
 2. Open the app and tap **"Scan"**.
-3. Point your camera at the PC terminal's QR code.
+3. Point your camera at the PC screen's QR code.
 4. 🎉 **Done!** You now have complete access to manage all files and folders.
 
 ---
@@ -116,10 +116,10 @@ This mounts via `gio` / `kio-fuse` directly into Dolphin or Thunar sidebar!
 
 ```
            ┌──────────────────────┐
-           │     WireFM Core      │
-           │  • Port 8080 (REST)  │
-           │  • Port 8081 (WebDAV)│
-           │  • Terminal QR Code  │
+           │ WireFM Desktop (App) │
+           │  • Embedded REST/Dav │
+           │  • Pairing QR Code   │
+           │  • Places & Devices  │
            └──────────┬───────────┘
                       │ Local Wi-Fi (HTTP / WebDAV)
                       ▼
@@ -138,4 +138,4 @@ This mounts via `gio` / `kio-fuse` directly into Dolphin or Thunar sidebar!
 
 Distributed under the **MIT License**. See [`LICENSE`](LICENSE) for more information.
 
-Copyright © 2026 **[Jasmin Thakor](https://github.com/jasmin1727)**
+Copyright © 2026 **[Nirikshak01](https://github.com/Nirikshak01)**
