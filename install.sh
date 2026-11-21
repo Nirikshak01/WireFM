@@ -56,9 +56,7 @@ fi
 # Create executable wrapper script for wirefm-desktop
 cat > "$INSTALL_BIN/wirefm-desktop" << 'EOF'
 #!/usr/bin/env bash
-export GDK_BACKEND=x11
 export WEBKIT_DISABLE_DMABUF_RENDERER=1
-export WEBKIT_DISABLE_COMPOSITING_MODE=1
 BIN_PATH="$HOME/.local/bin/wirefm-desktop-bin"
 if [ ! -f "$BIN_PATH" ]; then
     BIN_PATH="$HOME/wirefm-desktop"
@@ -86,7 +84,7 @@ Type=Application
 Name=WireFM
 GenericName=Wireless File Manager
 Comment=Ultra-fast wireless file sharing and desktop manager
-Exec=env GDK_BACKEND=x11 WEBKIT_DISABLE_DMABUF_RENDERER=1 WEBKIT_DISABLE_COMPOSITING_MODE=1 wirefm-desktop %U
+Exec=env WEBKIT_DISABLE_DMABUF_RENDERER=1 wirefm-desktop %U
 Icon=wirefm
 Terminal=false
 Categories=Utility;FileManager;Network;FileTransfer;

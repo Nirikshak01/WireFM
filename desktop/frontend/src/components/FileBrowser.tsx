@@ -198,7 +198,9 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
     )
   }
 
-  if (files.length === 0) {
+  const safeFiles = Array.isArray(files) ? files : []
+
+  if (safeFiles.length === 0) {
     return (
       <div
         onContextMenu={(e) => onContextMenu(e, null)}
@@ -242,7 +244,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
 
       {viewMode === 'list' ? (
         <div className="divide-y divide-brand-border/40">
-          {files.map((file) => {
+          {safeFiles.map((file) => {
             const isSelected = selectedPaths.has(file.path)
             return (
               <div
@@ -288,7 +290,7 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({
       ) : (
         /* 3-Column Grid matching Figma Mockup */
         <div className="grid grid-cols-3 gap-6 auto-rows-max">
-          {files.map((file) => {
+          {safeFiles.map((file) => {
             const isSelected = selectedPaths.has(file.path)
             return (
               <div

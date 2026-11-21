@@ -212,7 +212,7 @@ func (a *App) GetConnectedDevices() []ConnectedDeviceInfo {
 	a.mu.Lock()
 	defer a.mu.Unlock()
 
-	var list []ConnectedDeviceInfo
+	list := make([]ConnectedDeviceInfo, 0)
 	for _, d := range a.devices {
 		list = append(list, d)
 	}
@@ -281,14 +281,13 @@ func (a *App) resolvePath(reqPath string) string {
 
 // ListLocalDirectory lists contents of a local directory
 func (a *App) ListLocalDirectory(reqPath string) ([]FileEntry, error) {
+	results := make([]FileEntry, 0)
 	targetPath := a.resolvePath(reqPath)
 
 	entries, err := os.ReadDir(targetPath)
 	if err != nil {
-		return nil, err
+		return results, err
 	}
-
-	var results []FileEntry
 	for _, entry := range entries {
 		// Skip hidden dotfiles by default unless requested
 		if strings.HasPrefix(entry.Name(), ".") {

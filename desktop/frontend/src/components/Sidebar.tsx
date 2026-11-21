@@ -122,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
           {/* List of Connected Devices */}
           <div className="flex flex-col gap-0.5 mt-1">
-            {connectedDevices.map((dev) => {
+            {(connectedDevices || []).map((dev) => {
               const isActive = activePlace === 'device' && activeDeviceId === dev.id
               return (
                 <div
@@ -158,7 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               )
             })}
 
-            {connectedDevices.length === 0 && activePlace !== 'scanner' && (
+            {(!connectedDevices || connectedDevices.length === 0) && activePlace !== 'scanner' && (
               <div className="px-3 py-1 text-xs text-brand-textTertiary italic">
                 No device connected
               </div>

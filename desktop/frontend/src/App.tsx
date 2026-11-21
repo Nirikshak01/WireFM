@@ -83,9 +83,10 @@ export default function App() {
   const checkDevices = useCallback(async () => {
     try {
       const devs = await WailsBridge.getConnectedDevices()
-      setConnectedDevices(devs)
+      setConnectedDevices(Array.isArray(devs) ? devs : [])
     } catch (err) {
       console.error('Failed to get connected devices:', err)
+      setConnectedDevices([])
     }
   }, [])
 
@@ -112,7 +113,7 @@ export default function App() {
         } else {
           entries = await WailsBridge.listLocalDirectory(path)
         }
-        setFiles(entries)
+        setFiles(Array.isArray(entries) ? entries : [])
       } catch (err) {
         console.error('Failed to list directory:', err)
         showToast('Failed to open directory')

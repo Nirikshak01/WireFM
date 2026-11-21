@@ -65,7 +65,13 @@ export const WailsBridge = {
   async getConnectedDevices(): Promise<ConnectedDevice[]> {
     const app = getWailsApp()
     if (app) {
-      return await app.GetConnectedDevices()
+      try {
+        const res = await app.GetConnectedDevices()
+        return Array.isArray(res) ? res : []
+      } catch (err) {
+        console.error('Failed to get connected devices:', err)
+        return []
+      }
     }
     return [
       { id: 'dev_vivo', name: 'Vivo y36', ip: '192.168.1.42', status: 'Connected', last_seen: 'Just now' }
@@ -96,7 +102,13 @@ export const WailsBridge = {
   async listLocalDirectory(path: string): Promise<FileEntry[]> {
     const app = getWailsApp()
     if (app) {
-      return await app.ListLocalDirectory(path)
+      try {
+        const res = await app.ListLocalDirectory(path)
+        return Array.isArray(res) ? res : []
+      } catch (err) {
+        console.error('Failed to list local directory:', err)
+        return []
+      }
     }
     // Fallback mock entries
     return [
@@ -117,7 +129,13 @@ export const WailsBridge = {
   async listRemoteDirectory(path: string): Promise<FileEntry[]> {
     const app = getWailsApp()
     if (app) {
-      return await app.ListRemoteDirectory(path)
+      try {
+        const res = await app.ListRemoteDirectory(path)
+        return Array.isArray(res) ? res : []
+      } catch (err) {
+        console.error('Failed to list remote directory:', err)
+        return []
+      }
     }
     return [
       { name: 'DCIM', path: '/storage/emulated/0/DCIM', is_dir: true, size: 0, mod_time: '', ext: '' },
