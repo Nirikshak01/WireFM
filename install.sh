@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# WireFM One-Command Installer (Desktop GUI + CLI Server)
+# WireFM One-Command Installer (Standalone Desktop GUI)
 # Usage: curl -sSL https://raw.githubusercontent.com/Nirikshak01/WireFM/main/install.sh | bash
 # ==============================================================================
 
@@ -19,7 +19,7 @@ echo "  ██║███╗██║██║██╔══██╗██╔
 echo "  ╚███╔███╔╝██║██║  ██║███████╗██║     ██║ ╚═╝ ██║"
 echo "   ╚══╝╚══╝ ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚═╝     ╚═╝"
 echo -e "\033[0m"
-echo "  Installing WireFM Desktop GUI & CLI Server..."
+echo "  Installing WireFM Desktop GUI..."
 echo "─────────────────────────────────────────────────────────────"
 
 INSTALL_BIN="$HOME/.local/bin"
@@ -29,6 +29,11 @@ ICON_DIR_SCALABLE="$HOME/.local/share/icons/hicolor/scalable/apps"
 PIXMAPS_DIR="$HOME/.local/share/pixmaps"
 
 mkdir -p "$INSTALL_BIN" "$APP_DIR" "$ICON_DIR" "$ICON_DIR_SCALABLE" "$PIXMAPS_DIR"
+
+# Clean up any legacy CLI binary
+if [ -f "$INSTALL_BIN/wirefm" ]; then
+    rm -f "$INSTALL_BIN/wirefm" 2>/dev/null || true
+fi
 
 # 1. Download WireFM Desktop GUI Binary & create GPU-safe wrapper
 echo "📦 Downloading WireFM Desktop GUI..."
@@ -42,9 +47,16 @@ if ! curl -sL --fail "${RELEASE_BASE}/wirefm-desktop-linux-amd64" -o "$INSTALL_B
 fi
 chmod +x "$INSTALL_BIN/wirefm-desktop-bin" 2>/dev/null || true
 
+# Also sync to ~/wirefm-desktop if user runs it directly from home
+if [ -f "$INSTALL_BIN/wirefm-desktop-bin" ]; then
+    cp "$INSTALL_BIN/wirefm-desktop-bin" "$HOME/wirefm-desktop" 2>/dev/null || true
+    chmod +x "$HOME/wirefm-desktop" 2>/dev/null || true
+fi
+
 # Create executable wrapper script for wirefm-desktop
 cat > "$INSTALL_BIN/wirefm-desktop" << 'EOF'
 #!/usr/bin/env bash
+export GDK_BACKEND=x11
 export WEBKIT_DISABLE_DMABUF_RENDERER=1
 export WEBKIT_DISABLE_COMPOSITING_MODE=1
 BIN_PATH="$HOME/.local/bin/wirefm-desktop-bin"
@@ -55,12 +67,7 @@ exec "$BIN_PATH" "$@"
 EOF
 chmod +x "$INSTALL_BIN/wirefm-desktop" 2>/dev/null || true
 
-# 2. Download WireFM CLI Server
-echo "⚡ Downloading WireFM CLI Server..."
-curl -sL --fail "${RELEASE_BASE}/wirefm-linux-amd64" -o "$INSTALL_BIN/wirefm" 2>/dev/null || true
-chmod +x "$INSTALL_BIN/wirefm" 2>/dev/null || true
-
-# 3. Install App Icon
+# 2. Install App Icon
 echo "🎨 Installing Official WireFM App Icons..."
 if ! curl -sL --fail "${RAW_BASE}/desktop/appicon.png" -o "$ICON_DIR/wirefm.png"; then
     if [ -f "/home/jasmin/Projects/wirefm/desktop/appicon.png" ]; then
@@ -70,7 +77,7 @@ fi
 cp "$ICON_DIR/wirefm.png" "$PIXMAPS_DIR/wirefm.png" 2>/dev/null || true
 curl -sL --fail "${RAW_BASE}/Assets/wireframe-layer-dark-bg-redus.svg" -o "$ICON_DIR_SCALABLE/wirefm.svg" 2>/dev/null || true
 
-# 4. Create Desktop Entry in Applications Menu
+# 3. Create Desktop Entry in Applications Menu
 echo "🚀 Creating Linux Application Menu Launcher..."
 cat > "$APP_DIR/wirefm.desktop" << 'EOF'
 [Desktop Entry]
@@ -79,11 +86,11 @@ Type=Application
 Name=WireFM
 GenericName=Wireless File Manager
 Comment=Ultra-fast wireless file sharing and desktop manager
-Exec=env WEBKIT_DISABLE_DMABUF_RENDERER=1 WEBKIT_DISABLE_COMPOSITING_MODE=1 wirefm-desktop %U
+Exec=env GDK_BACKEND=x11 WEBKIT_DISABLE_DMABUF_RENDERER=1 WEBKIT_DISABLE_COMPOSITING_MODE=1 wirefm-desktop %U
 Icon=wirefm
 Terminal=false
 Categories=Utility;FileManager;Network;FileTransfer;
-StartupWMClass=WireFM
+StartupWMClass=wirefm-desktop
 Keywords=wirefm;file;manager;wireless;transfer;wifi;share;phone;android;
 EOF
 chmod +x "$APP_DIR/wirefm.desktop"
@@ -92,7 +99,7 @@ chmod +x "$APP_DIR/wirefm.desktop"
 update-desktop-database "$APP_DIR" 2>/dev/null || true
 gtk-update-icon-cache -f -t "$HOME/.local/share/icons/hicolor" 2>/dev/null || true
 
-# 5. Ensure ~/.local/bin is in PATH
+# 4. Ensure ~/.local/bin is in PATH
 if [[ ":$PATH:" != *":$INSTALL_BIN:"* ]]; then
     echo "export PATH=\"\$PATH:$INSTALL_BIN\"" >> ~/.bashrc 2>/dev/null || true
     [ -f ~/.zshrc ] && echo "export PATH=\"\$PATH:$INSTALL_BIN\"" >> ~/.zshrc 2>/dev/null || true
@@ -104,7 +111,6 @@ if [[ ":$PATH:" != *":$INSTALL_BIN:"* ]]; then
 fi
 
 echo "─────────────────────────────────────────────────────────────"
-echo "✅ WireFM Desktop & CLI installed successfully!"
+echo "✅ WireFM Desktop installed successfully!"
 echo "✨ WireFM is now available in your Application Menu (with logo)!"
-echo "👉 Run from App Menu or terminal: wirefm-desktop"
-echo "👉 CLI Server command: wirefm"
+echo "👉 Run from App Menu (Rofi/Wofi/Menu) or terminal: wirefm-desktop"

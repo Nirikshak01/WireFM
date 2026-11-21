@@ -75,6 +75,7 @@ func NewApp() *App {
 func (a *App) startup(ctx context.Context) {
 	a.ctx = ctx
 	a.initNetworking()
+	a.startEmbeddedServer()
 }
 
 // shutdown is called at application termination

@@ -47,31 +47,6 @@ jobs:
           name: WireFM-Android-APK
           path: dist/WireFM.apk
 
-  build-linux:
-    name: 🐧 Build Linux Binary
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-
-      - name: Setup Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: '1.23'
-          check-latest: true
-
-      - name: Build Standalone Binary
-        run: |
-          mkdir -p dist
-          cd server
-          go build -ldflags="-s -w" -o ../dist/wirefm-linux-amd64 .
-
-      - name: Upload Binary Artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: WireFM-Linux-Binary
-          path: dist/wirefm-linux-amd64
-
   build-desktop:
     name: 🖥️ Build Desktop GUI
     runs-on: ubuntu-latest
@@ -121,7 +96,7 @@ jobs:
 
   release:
     name: 🚀 Publish Release
-    needs: [build-android, build-linux, build-desktop]
+    needs: [build-android, build-desktop]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -131,12 +106,6 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: WireFM-Android-APK
-          path: dist/
-
-      - name: Download Linux Artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: WireFM-Linux-Binary
           path: dist/
 
       - name: Download Desktop Artifact
@@ -156,7 +125,6 @@ jobs:
             
             - 📱 **Android APK**: Download [`WireFM.apk`](https://github.com/${{ github.repository }}/releases/latest/download/WireFM.apk) to install on your phone.
             - 🖥️ **Desktop GUI App (Linux)**: [`wirefm-desktop-linux-amd64`](https://github.com/${{ github.repository }}/releases/latest/download/wirefm-desktop-linux-amd64) (Ultra-lightweight iOS-style standalone desktop GUI).
-            - 🐧 **Linux Standalone CLI/Server**: [`wirefm-linux-amd64`](https://github.com/${{ github.repository }}/releases/latest/download/wirefm-linux-amd64) (No dependencies needed).
             
             **Quick Install on Linux:**
             ```bash
@@ -165,6 +133,5 @@ jobs:
           files: |
             dist/WireFM.apk
             dist/wirefm-desktop-linux-amd64
-            dist/wirefm-linux-amd64
           prerelease: false
           generate_release_notes: true

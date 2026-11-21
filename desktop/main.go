@@ -3,6 +3,7 @@ package main
 import (
 	"embed"
 	"os"
+	"syscall"
 
 	"github.com/wailsapp/wails/v2"
 	"github.com/wailsapp/wails/v2/pkg/options"
@@ -11,12 +12,18 @@ import (
 )
 
 func init() {
-	// Fix for WebKitGTK DMA-BUF renderer black screen bug on Intel Haswell / Arch / Wayland / Hyprland
-	if os.Getenv("WEBKIT_DISABLE_DMABUF_RENDERER") == "" {
+	// WebKitGTK on Linux with Intel Haswell (Mesa crocus) or NVIDIA fails Wayland DMA-BUF compositing.
+	// Running under XWayland via GDK_BACKEND=x11 fixes the black screen across all Wayland compositors (Hyprland, Sway, GNOME).
+	// Re-exec with GDK_BACKEND=x11 before GTK initializes if not already set.
+	if os.Getenv("WIREFM_GDK_SET") == "" {
+		os.Setenv("WIREFM_GDK_SET", "1")
+		os.Setenv("GDK_BACKEND", "x11")
 		os.Setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1")
-	}
-	if os.Getenv("WEBKIT_DISABLE_COMPOSITING_MODE") == "" {
 		os.Setenv("WEBKIT_DISABLE_COMPOSITING_MODE", "1")
+		exe, err := os.Executable()
+		if err == nil {
+			syscall.Exec(exe, os.Args, os.Environ())
+		}
 	}
 }
 
@@ -47,7 +54,7 @@ func main() {
 		Linux: &linux.Options{
 			Icon:                icon,
 			WindowIsTranslucent: false,
-			WebviewGpuPolicy:    linux.WebviewGpuPolicyNever,
+			WebviewGpuPolicy:    linux.WebviewGpuPolicyOnDemand,
 		},
 	})
 
